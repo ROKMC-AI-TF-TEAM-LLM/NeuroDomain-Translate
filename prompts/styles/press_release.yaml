@@ -1,0 +1,20 @@
+# 문체 프리셋: 보도자료 — 계획서 §7.3
+# 주 텍스트 유형이다 (D-04).
+name: press_release
+
+ko2en:
+  register: "News wire style. Active voice preferred."
+  rules:
+    - "Rank precedes surname: 'Colonel Kim', not 'Kim Colonel'."
+    - "Unit designations: 'the 7th Maneuver Corps'."
+    - "Dates: 'August 19, 2026' or 'Aug. 19' in tight copy."
+    - "Attribution: 'the JCS said', not 'it was announced by the JCS'."
+    - "Spell out numbers one through nine; figures for 10 and above."
+
+en2ko:
+  register: "보도자료체. 종결어미 '~했다', '~밝혔다'."
+  rules:
+    - "직함은 이름 앞: '김OO 대령'."
+    - "날짜: '2026년 8월 19일' 또는 '8월 19일'."
+    - "피동 표현 최소화: '발표되었다' → '발표했다'."
+    - "부대명·계급은 국군 공식 용어 사용. 직역 금지."

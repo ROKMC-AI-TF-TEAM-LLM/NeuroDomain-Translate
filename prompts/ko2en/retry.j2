@@ -1,0 +1,17 @@
+{# 재호출 프롬프트 — 계획서 §7.8.
+   대화형이 아니라 **새 요청**으로 구성한다.
+   이전 출력을 함께 주면 전면 재작성이 아니라 수정에 가깝게 나온다. #}
+[Previous attempt omitted required terms]
+Missing:
+{% for v in missing %}
+  {{ v.source }} → {{ v.expected }}
+{% endfor %}
+
+[Your previous output]
+{{ previous }}
+
+[Source text]
+{{ source }}
+
+Rewrite the translation so that every term listed above appears in the
+required form. Change nothing else. Output ONLY the corrected translation.

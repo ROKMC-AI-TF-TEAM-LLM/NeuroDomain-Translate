@@ -1,0 +1,23 @@
+{# 군종 판정 — 계획서 §4.1(4단계), §7.4, R-05.
+   규칙 기반 판정이 실패했을 때만 부른다. 코드가 잘못 확정하면 모델이 그대로
+   따르므로, 확신이 없으면 UNKNOWN 을 내도록 명시한다. #}
+Read the following Republic of Korea military text and identify which
+service branch it primarily concerns.
+
+Answer with EXACTLY ONE of these tokens and nothing else:
+  ARMY
+  NAVY
+  AIR_FORCE
+  MARINE_CORPS
+  JOINT
+  UNKNOWN
+
+Rules:
+- Answer UNKNOWN unless the text contains clear evidence.
+- Do not guess from a single ambiguous rank or unit name.
+- JOINT means the text concerns joint/combined organizations
+  (e.g. Joint Chiefs of Staff, Combined Forces Command) rather than
+  one specific service.
+
+[Text]
+{{ text }}

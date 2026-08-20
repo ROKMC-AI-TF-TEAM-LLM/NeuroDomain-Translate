@@ -1,0 +1,15 @@
+{# 재호출 프롬프트 — 계획서 §7.8. #}
+[Previous attempt omitted required terms]
+Missing:
+{% for v in missing %}
+  {{ v.source }} → {{ v.expected }}
+{% endfor %}
+
+[Your previous output]
+{{ previous }}
+
+[Source text]
+{{ source }}
+
+Rewrite the translation so that every term listed above appears in the
+required form. Change nothing else. Output ONLY the corrected translation.
