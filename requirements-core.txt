@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # 런타임 코어 (GPU 불필요) — 계획서 §10.1
 #
 # 버전 정책 (D-20): mars-ai-server/requirements.txt 와 겹치는 항목은
