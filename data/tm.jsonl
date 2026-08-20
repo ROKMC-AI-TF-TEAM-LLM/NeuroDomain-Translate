@@ -1,0 +1,36 @@
+// 번역 메모리 — 계획서 §5.2. 한 줄에 한 문장 쌍.
+//
+// ⚠⚠ 이것은 **검수된 번역 메모리가 아니다.** LLM 이 지어낸 합성 샘플 15건이다.
+//   계획서 Phase 1 의 완료 기준은 "TM 세그먼트 10,000쌍 이상" 이며, 원천은
+//   AI Hub 병렬 말뭉치와 국방부 보도자료를 정렬한 것이다.
+//
+//   **이 파일의 문장을 실제 번역 사례로 인용하지 말 것.** 출처가 없다.
+//   TM 은 few-shot 예시로 프롬프트에 그대로 들어가므로(§7.6), 검수되지 않은
+//   쌍은 문체와 용어를 함께 오염시킨다. 지금은 BM25 검색 경로(§6.4)를 배선
+//   확인하기 위한 최소 데이터이며, Phase 1 에서 통째로 교체한다.
+//
+// ⚠ 평가 오염 주의: data/goldenset.jsonl 과 문장이 겹치면 안 된다. 겹치면
+//   모델이 few-shot 으로 정답을 받아 보고 답하는 셈이라 평가가 무의미해진다.
+//   두 파일은 의도적으로 분리했다 (tests/test_goldenset.py 가 검사한다).
+//
+// TM 에는 id 가 없다. 개별 참조가 아니라 검색 대상이라 인덱스상 위치로 충분하다.
+// quality: sample | verified. verified 는 사람 검수를 마친 것만.
+//
+// 문체는 보도자료체로 통일했다 (D-04, §7.3). few-shot 예시 선택은 의미
+// 유사성보다 **구문 유사성**을 우선하므로(§7.6), 반복되는 보도자료 구문
+// 패턴("~라고 밝혔다", "~을 실시했다")을 의도적으로 담았다.
+{"ko":"국방부는 이번 조치가 정례적인 것이라고 밝혔다.","en":"The Ministry of National Defense said the measure was routine.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"합동참모본부는 관련 동향을 예의주시하고 있다고 밝혔다.","en":"The Joint Chiefs of Staff said it was closely monitoring related developments.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"육군은 이달 말까지 정기 점검을 마칠 계획이라고 전했다.","en":"The Republic of Korea Army said it planned to complete regular inspections by the end of this month.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"해군은 서해에서 기동 훈련을 실시했다고 발표했다.","en":"The Republic of Korea Navy announced that it had conducted maneuver training in the West Sea.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"공군은 전투기 정비 주기를 조정했다고 설명했다.","en":"The Republic of Korea Air Force explained that it had adjusted the maintenance cycle for its fighter aircraft.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"해병대는 상륙 훈련에 2개 대대가 참가했다고 밝혔다.","en":"The Republic of Korea Marine Corps said two battalions took part in the landing exercise.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"방위사업청은 사업 일정을 일부 조정했다고 알렸다.","en":"The Defense Acquisition Program Administration said it had partially adjusted the program schedule.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"한미연합군사령부는 협의 결과를 이달 중 공개할 예정이다.","en":"The ROK-US Combined Forces Command is scheduled to release the results of the consultations this month.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"제7기동군단은 예하 부대의 준비 태세를 점검했다.","en":"The VII Maneuver Corps inspected the readiness of its subordinate units.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"제20기계화보병사단은 야간 기동 훈련을 마쳤다.","en":"The 20th Mechanized Infantry Division completed night maneuver training.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"이번 합동훈련에는 3개 여단이 참가했다.","en":"Three brigades participated in the joint exercise.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"연합훈련은 다음 달 초까지 이어질 예정이다.","en":"The combined exercise is scheduled to continue until early next month.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"K2 흑표 전차가 훈련장에 배치됐다.","en":"K2 Black Panther tanks were deployed to the training range.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"천무 다연장로켓 사격이 계획대로 진행됐다.","en":"Chunmoo multiple rocket launcher firing proceeded as planned.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}
+{"ko":"군 당국은 추가 배치 계획은 없다고 선을 그었다.","en":"Military authorities drew a line, saying there were no plans for additional deployment.","source":"합성 샘플 (출처 없음)","style":"press_release","quality":"sample"}

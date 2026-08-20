@@ -1,0 +1,54 @@
+// 골든셋 — 계획서 §11 Phase 3, §12. 회귀 테스트와 모델 비교의 정답셋.
+//
+// ⚠⚠ 이것은 **검수된 정답이 아니다.** LLM 이 지어낸 합성 샘플 20건이다.
+//   계획서는 골든셋을 "보도자료 실제 문장 50개, 사람이 검수한 정답 번역" 으로
+//   규정한다. 이 파일은 그 요건을 하나도 만족하지 않는다.
+//     - 실제 보도자료가 아니다. 문장을 지어냈다.
+//     - 정답 번역을 사람이 검수하지 않았다.
+//     - 20건이다 (목표 50건: 한→영 25, 영→한 25).
+//
+//   **이 파일로 낸 chrF / COMET 점수를 품질 지표로 인용하지 말 것.**
+//   측정 대상이 "실제 번역 품질" 이 아니라 "이 샘플 작성자의 추측과의 일치도" 다.
+//   용어 준수율만은 의미가 있다 — 용어집 대역어를 그대로 쓴 참조문이라
+//   "지정 대역어가 반영됐는가" 는 정직하게 잰다.
+//
+//   용도는 두 가지다.
+//     1. eval 코드(§12)를 지금 만들고 테스트하기 위한 배선용 데이터
+//     2. 실제 골든셋이 갖춰야 할 형태와 커버리지의 본보기
+//   Phase 3 에서 실제 문장으로 통째로 교체한다.
+//
+// ⚠ 평가 오염 주의: data/tm.jsonl 과 문장이 겹치면 안 된다. TM 은 few-shot
+//   예시로 프롬프트에 들어가므로, 골든셋 문장이 TM 에 있으면 모델이 정답을
+//   보고 답하는 셈이 된다. 두 파일은 의도적으로 분리해 두었다
+//   (tests/test_goldenset.py 가 겹침을 검사한다).
+//
+// 필드
+//   id            G-### 형식. 영구 불변
+//   direction     ko2en | en2ko
+//   src / ref     원문 / 참조 번역
+//   expect_terms  이 문장에서 매칭되어야 할 term_id. 매칭 엔진 회귀에도 쓴다
+//   tags          평가 결과를 갈라 볼 축 (§12)
+//   quality       sample | verified. verified 는 사람 검수를 마친 것만
+//
+// ── 한 → 영 (10건) ───────────────────────────────────────────
+{"id":"G-001","direction":"ko2en","src":"제7기동군단 예하 제20기계화보병사단은 K2 흑표와 천무 다연장로켓을 동원한 합동훈련을 실시했다고 합동참모본부가 밝혔다.","ref":"The Joint Chiefs of Staff (JCS) said the 20th Mechanized Infantry Division under the VII Maneuver Corps conducted a joint exercise involving K2 Black Panther tanks and Chunmoo multiple rocket launchers.","expect_terms":["T-0142","T-0301","T-0303","T-0400","T-0401","T-0501"],"tags":["proper_noun_dense"],"quality":"sample","note":"계획서 §11 Phase 3 이 예시로 든 문장. 고유명사 밀집 케이스"}
+{"id":"G-002","direction":"ko2en","src":"합참은 20일부터 나흘간 연합훈련을 실시한다고 밝혔다.","ref":"The Joint Chiefs of Staff (JCS) said a combined exercise will be conducted for four days from the 20th.","expect_terms":["T-0142","T-0500"],"tags":["abbreviation","numbers"],"quality":"sample","note":"별칭(합참)만 등장. 표제어와 이어지는지 본다"}
+{"id":"G-003","direction":"ko2en","src":"해군 김철수 대령은 함정 훈련을 지휘했다고 국방부가 전했다.","ref":"The Ministry of National Defense (MND) said Captain Kim Cheol-su of the Republic of Korea Navy led the vessel training.","expect_terms":["T-0100","T-0201","T-0087"],"tags":["ambiguous_rank"],"quality":"sample","note":"해군 문맥이므로 대령은 Captain 이어야 한다 (§5.3)"}
+{"id":"G-004","direction":"ko2en","src":"육군 김철수 대령은 사격 훈련을 지휘했다.","ref":"Colonel Kim Cheol-su of the Republic of Korea Army led the live-fire training.","expect_terms":["T-0200","T-0087"],"tags":["ambiguous_rank"],"quality":"sample","note":"같은 용어가 육군 문맥에서는 Colonel"}
+{"id":"G-005","direction":"ko2en","src":"방위사업청은 2026년 8월 19일 신형 장비 도입 계획을 발표했다.","ref":"The Defense Acquisition Program Administration (DAPA) announced a plan to acquire new equipment on August 19, 2026.","expect_terms":["T-0160"],"tags":["abbreviation","dates"],"quality":"sample","note":"약어 첫 등장 + 날짜 표기"}
+{"id":"G-006","direction":"ko2en","src":"이번 훈련은 연합훈련이 아니라 합동훈련이라고 합참이 설명했다.","ref":"The Joint Chiefs of Staff (JCS) explained that this was a joint exercise, not a combined exercise.","expect_terms":["T-0142","T-0500","T-0501"],"tags":["term_confusion"],"quality":"sample","note":"연합(다국적) vs 합동(다군종). 범용 LLM 이 가장 자주 틀리는 쌍"}
+{"id":"G-007","direction":"ko2en","src":"한미연합군사령부는 정례 협의를 마쳤다고 밝혔다.","ref":"The ROK-US Combined Forces Command (CFC) said it had concluded regular consultations.","expect_terms":["T-0150"],"tags":["abbreviation"],"quality":"sample","note":""}
+{"id":"G-008","direction":"ko2en","src":"합참은 훈련 계획을 발표했다.\n\n합참은 이번 훈련이 정례적인 것이라고 설명했다.","ref":"The Joint Chiefs of Staff (JCS) announced the exercise plan.\n\nThe JCS explained that the exercise was routine.","expect_terms":["T-0142"],"tags":["multi_paragraph","abbreviation"],"quality":"sample","note":"청크 간 약어 일관성 (§7.4). 둘째 문단은 약어를 써야 한다"}
+{"id":"G-009","direction":"ko2en","src":"제7기동군단 예하 각 군단은 동시에 이동을 시작했다.","ref":"Each corps under the VII Maneuver Corps began moving simultaneously.","expect_terms":["T-0300","T-0301"],"tags":["boundary"],"quality":"sample","note":"계획서 §11 의 겹침·경계 케이스를 문장으로 옮긴 것"}
+{"id":"G-010","direction":"ko2en","src":"해병대와 공군은 3개 대대 규모의 훈련을 실시했다.","ref":"The Republic of Korea Marine Corps and the Republic of Korea Air Force conducted training at the scale of three battalions.","expect_terms":["T-0202","T-0203","T-0305"],"tags":["numbers","multi_branch"],"quality":"sample","note":"군종 단서가 둘이라 군종 판정은 미확정이어야 한다 (R-05)"}
+// ── 영 → 한 (10건) ───────────────────────────────────────────
+{"id":"G-011","direction":"en2ko","src":"The JCS said the Republic of Korea Navy will conduct a combined exercise for four days from Aug. 20.","ref":"합동참모본부는 대한민국 해군이 8월 20일부터 나흘간 연합훈련을 실시한다고 밝혔다.","expect_terms":["T-0142","T-0201","T-0500"],"tags":["abbreviation","dates"],"quality":"sample","note":"용어집 없이 돌리면 JCS 를 '국방' 으로 푸는 사례가 관측됐다"}
+{"id":"G-012","direction":"en2ko","src":"The exercise was a joint exercise, not a combined exercise.","ref":"이번 훈련은 연합훈련이 아니라 합동훈련이었다.","expect_terms":["T-0500","T-0501"],"tags":["term_confusion"],"quality":"sample","note":"G-006 의 반대 방향"}
+{"id":"G-013","direction":"en2ko","src":"The Defense Acquisition Program Administration signed a contract for K2 Black Panther tanks.","ref":"방위사업청은 K2 흑표 전차 계약을 체결했다.","expect_terms":["T-0160","T-0400"],"tags":["abbreviation"],"quality":"sample","note":""}
+{"id":"G-014","direction":"en2ko","src":"The Ministry of National Defense said the 20th Mechanized Infantry Division had completed its annual training.","ref":"국방부는 제20기계화보병사단이 연례 훈련을 마쳤다고 밝혔다.","expect_terms":["T-0100","T-0303"],"tags":["unit_designation"],"quality":"sample","note":""}
+{"id":"G-015","direction":"en2ko","src":"Captain Kim Cheol-su of the Republic of Korea Navy commanded the vessel.","ref":"대한민국 해군 김철수 대령이 함정을 지휘했다.","expect_terms":["T-0201"],"tags":["ambiguous_rank"],"quality":"sample","note":"영→한에서는 Captain 이 해군 문맥이므로 대령이다. 직함은 이름 앞 (§7.3)"}
+{"id":"G-016","direction":"en2ko","src":"The ROK-US Combined Forces Command announced the results on August 19, 2026.","ref":"한미연합군사령부는 2026년 8월 19일 결과를 발표했다.","expect_terms":["T-0150"],"tags":["dates","abbreviation"],"quality":"sample","note":""}
+{"id":"G-017","direction":"en2ko","src":"Units under the VII Maneuver Corps participated in the drill.","ref":"제7기동군단 예하 부대가 훈련에 참가했다.","expect_terms":["T-0301"],"tags":["unit_designation"],"quality":"sample","note":""}
+{"id":"G-018","direction":"en2ko","src":"Three brigades and one division took part in the operation.","ref":"3개 여단과 1개 사단이 작전에 참가했다.","expect_terms":["T-0302","T-0304"],"tags":["numbers"],"quality":"sample","note":"영문은 열 미만을 풀어 쓰지만 한국어 보도자료는 숫자를 쓴다 (§7.3)"}
+{"id":"G-019","direction":"en2ko","src":"The JCS said the drill was routine.\n\nThe JCS added that no additional deployment was planned.","ref":"합동참모본부는 이번 훈련이 정례적이라고 밝혔다.\n\n합동참모본부는 추가 배치 계획은 없다고 덧붙였다.","expect_terms":["T-0142"],"tags":["multi_paragraph"],"quality":"sample","note":"영→한은 약어를 반복하지 않고 정식 명칭을 쓴다"}
+{"id":"G-020","direction":"en2ko","src":"The Republic of Korea Air Force and the Republic of Korea Marine Corps conducted a combined exercise.","ref":"대한민국 공군과 대한민국 해병대가 연합훈련을 실시했다.","expect_terms":["T-0202","T-0203","T-0500"],"tags":["multi_branch"],"quality":"sample","note":"군종 단서가 둘이라 미확정이어야 한다"}
