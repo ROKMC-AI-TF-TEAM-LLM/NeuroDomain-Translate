@@ -1,0 +1,90 @@
+name: CI
+
+# 계획서 §9.5 / R-02:
+# "개발망에서 네트워크를 차단한 상태로 전체 테스트를 통과해야 반입 승인이다."
+# 에어갭 위반 코드는 개발망에서 정상 동작하고 폐쇄망에서만 터지므로,
+# Phase 0 부터 CI 에 강제한다.
+#
+# 잡을 둘로 나눈 이유: NLP 잡은 kiwipiepy-model(79MB sdist)을 빌드하느라
+# 느리다. 코어 잡을 빠르게 유지해 대부분의 회귀를 먼저 잡는다.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # §9.4 환경변수 강제. 폐쇄망 서버와 개발망 테스트 양쪽에서 설정한다.
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  HF_DATASETS_OFFLINE: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  core:
+    name: 코어 (Kiwi 없음)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # 반입 번들과 같은 버전이어야 한다 (§10.6).
+          python-version: "3.11"
+          cache: pip
+
+      - name: 의존성 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-core.txt -r requirements-dev.txt
+
+      - name: 린트
+        run: ruff check .
+
+      - name: 포맷 확인
+        run: ruff format --check .
+
+      - name: 테스트 (오프라인 검증 포함)
+        # tests/test_offline.py 가 소켓 가드를 걸어 외부 접근을 차단하고,
+        # §9.3 금지 패턴 정적 검사도 여기서 돈다.
+        # Kiwi 관련 테스트는 미설치라 skip 되고, 규칙 기반 폴백 경로가 검증된다.
+        run: pytest tests/ -v
+
+  nlp:
+    name: NLP (Kiwi 포함)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 의존성 설치
+        # kiwipiepy-model 은 wheel 이 없어 sdist 를 빌드한다 (D-21).
+        # 반입 번들에는 여기서 만드는 것과 같은 wheel 을 넣는다.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-core.txt -r requirements-nlp.txt -r requirements-dev.txt
+
+      - name: 테스트
+        # Kiwi 문장 분할(D-22)과 용어집 사용자 사전이 여기서 검증된다.
+        # 모델 서버가 없으므로 tests/test_backend_live.py 는 skip 된다.
+        run: pytest tests/ -v
+
+  glossary:
+    name: 용어집 검증
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-core.txt -r requirements-dev.txt
+      - name: 스키마 · 중복 · 필수 필드
+        # Phase 1 에서 tools/glossary_lint.py 로 옮긴다 (R-11).
+        run: pytest tests/test_glossary_schema.py -v

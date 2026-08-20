@@ -1,0 +1,25 @@
+# 런타임 코어 (GPU 불필요) — 계획서 §10.1
+#
+# 버전 정책 (D-20): mars-ai-server/requirements.txt 와 겹치는 항목은
+# 그쪽 버전을 정본으로 삼는다. 아래 3개는 양쪽이 이미 동일하다.
+#   fastapi / uvicorn / pydantic
+#
+# DB 드라이버 없음 (D-19). SQLite는 표준 라이브러리 sqlite3 를 쓴다.
+# ORM 도 쓰지 않는다. SQLAlchemy / psycopg / asyncpg 를 추가하지 말 것.
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+jinja2==3.1.5
+httpx==0.28.1
+python-multipart==0.0.20
+orjson==3.10.13
+structlog==24.4.0
+tenacity==9.0.0
+
+# 문체 프리셋(§4.2, §7.3)이 .yaml 이라 파서가 필요하다. 계획서 §10 에 없던
+# 항목이며 2026-08-19 사람 승인으로 추가했다 (D-23).
+# uvicorn[standard] 의 전이 의존성이라 반입 번들이 커지지는 않지만,
+# 번들과 1:1 대응을 위해 명시적으로 고정한다.
+pyyaml==6.0.3

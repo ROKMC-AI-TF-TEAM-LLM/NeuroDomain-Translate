@@ -1,0 +1,31 @@
+# ── 런타임 저장소 (계획서 §4.2, §5.4) ──────────────────────────
+# 폐쇄망에서 최초 기동 시 생성된다. 반입 대상이 아니며 커밋하지 않는다.
+# WAL 모드는 -wal, -shm 파일도 만든다.
+data/runtime.db
+data/runtime.db-wal
+data/runtime.db-shm
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ── 반입 번들 산출물 (계획서 §9.2) ─────────────────────────────
+bundle/
+*.whl
+
+# ── 로컬 설정 ─────────────────────────────────────────────────
+.env
+.env.local
+
+# ── OS / 편집기 ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/

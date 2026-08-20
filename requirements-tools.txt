@@ -1,0 +1,13 @@
+# 오프라인 배치 도구 (Phase 1, 개발망에서만 실행) — 계획서 §10.5
+#
+# 이 파일의 패키지는 폐쇄망에 반입하지 않는다.
+# 용어집 · TM 구축은 개발망에서 끝내고 결과물(JSONL)만 반입한다.
+#
+# sentence-transformers 는 모델을 내려받는다. 개발망 전용이므로 허용되지만,
+# app/ 아래 런타임 코드에서는 import 하지 말 것 (§9.3).
+
+pandas==2.2.3
+openpyxl==3.1.5
+sentence-transformers==3.3.1
+sacrebleu==2.4.3
+unbabel-comet==2.2.4

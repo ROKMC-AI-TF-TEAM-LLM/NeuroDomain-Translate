@@ -1,0 +1,25 @@
+# 서빙 (GPU, 폐쇄망 서버) — 계획서 §10.3
+#
+# ⚠ 이 파일은 잠정이다. O-06(폐쇄망 서버 OS / CUDA 버전) 확정 전까지
+#   torch 휠(cu121 / cu124 / cu128 …)을 고를 수 없다.
+#   Phase 0 의 requirements.lock.txt 에는 이 파일을 포함하지 않았다.
+#   Phase 3 착수 시 O-06 을 확인하고 잠금할 것.
+#
+# 버전 정책 (D-20): mars-ai-server 와 겹치는 항목은 그쪽 버전을 따른다.
+#   torch         2.5.1  (계획서) → 2.8.0   ← 변경됨
+#   transformers  4.48.0 (계획서) → 4.57.1  ← 변경됨
+#   vllm          0.7.2  (계획서) → 0.11.0  ← 변경됨
+
+torch==2.8.0
+transformers==4.57.1
+vllm==0.11.0
+accelerate==1.2.1
+safetensors==0.4.5
+
+# mars-ai-server 가 함께 고정한 전이 의존성이다. 위 3개와 한 묶음으로 움직인다.
+# 계획서 §10 에 없는 항목이라 임의로 추가하지 않았다. Phase 3 에서 실제
+# 해석 결과를 보고 lock 에 반영할지 결정할 것.
+#   tokenizers==0.22.1
+#   triton==3.5.0
+#   torchvision==0.23.0
+#   torchaudio==2.8.0

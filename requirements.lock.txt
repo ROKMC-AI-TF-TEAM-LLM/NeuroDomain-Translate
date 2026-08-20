@@ -1,0 +1,49 @@
+# requirements.lock.txt — 계획서 §10 정본
+#
+# 생성: 2026-08-19, Phase 0 작업 7
+# 대상: manylinux2014_x86_64 / CPython 3.11
+# 명령: pip download -r requirements-core.txt \
+#         --platform manylinux2014_x86_64 --python-version 3.11 \
+#         --only-binary=:all: -d bundle/wheels/
+#
+# ⚠ 범위: **코어만 잠갔다.** NLP 와 서빙은 아래 사유로 미완이다.
+#   - NLP  : kss 와 kiwipiepy 의 의존성 트리에 wheel 이 없는 패키지가 있다.
+#            docs/phase0-notes.md §2 를 볼 것. Phase 2 착수 시 확정한다.
+#   - 서빙 : O-06(폐쇄망 CUDA 버전) 미확정이라 torch 휠을 고를 수 없다.
+#            Phase 3 착수 시 확정한다.
+#
+# ⚠ 이 파일은 **Windows 개발망에서 생성했다.** 그래서 uvloop 이 빠져 있다.
+#   pip 의 --platform 은 플랫폼 태그만 바꾸고 환경 마커(sys_platform)는 현재
+#   인터프리터 기준으로 평가한다. 반입용 최종 번들은 반드시 폐쇄망 서버와 같은
+#   OS(Linux)에서 다시 생성할 것. docs/phase0-notes.md §3 을 볼 것.
+
+annotated-types==0.8.0
+anyio==4.14.2
+certifi==2026.7.22
+click==8.4.2
+colorama==0.4.6
+fastapi==0.115.6
+h11==0.16.0
+httpcore==1.0.9
+httptools==0.8.0
+httpx==0.28.1
+idna==3.19
+jinja2==3.1.5
+markupsafe==3.0.3
+orjson==3.10.13
+pydantic==2.10.4
+pydantic-core==2.27.2
+pydantic-settings==2.7.0
+python-dotenv==1.2.3
+python-multipart==0.0.20
+pyyaml==6.0.3
+starlette==0.41.3
+structlog==24.4.0
+tenacity==9.0.0
+typing-extensions==4.16.0
+uvicorn==0.34.0
+watchfiles==1.2.0
+websockets==17.0.1
+
+# Linux 에서 재생성하면 아래가 추가된다 (uvicorn[standard] 의 조건부 의존성):
+#   uvloop==<해석값>       ; sys_platform != 'win32'
