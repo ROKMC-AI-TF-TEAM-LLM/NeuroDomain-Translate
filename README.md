@@ -96,6 +96,7 @@ PyPI 에 wheel 이 없어 sdist 를 빌드한다 (D-21). 이것 없이 코어만
 | `NDT_VLLM_BASE_URL` | `http://127.0.0.1:8000/v1` | 모델 서버. **폐쇄망 내부 주소만** |
 | `NDT_VLLM_SERVED_NAME` | (자동) | 비우면 `/v1/models` 첫 항목 |
 | `NDT_PROMPT_PRESET` | `full` | `full` \| `compact` (§7.9) |
+| `NDT_DEFAULT_STYLE` | `press_release` | 아래 문체 참조 |
 | `NDT_USE_KIWI` | `true` | false 면 규칙 기반 문장 분할 |
 | `NDT_MAX_INPUT_CHARS` | `5000` | 입력 상한 (D-05) |
 | `NDT_ADMIN_ENABLED` | `false` | `/admin/reload`. **O-07 확정 전까지 켜지 말 것** |
@@ -118,6 +119,72 @@ PyPI 에 wheel 이 없어 sdist 를 빌드한다 (D-21). 이것 없이 코어만
 > ⚠ **이 경고는 아직 화면에 보이지 않는다.** API 는 반환하지만 프론트에 표시
 > 위치가 없다. 지금은 API 응답과 로그로만 확인할 수 있다.
 > 자세한 경위는 [phase2-notes §9](docs/phase2-notes.md) 참조.
+
+## 문체 (§7.3)
+
+요청의 `style` 로 고른다. 정의는 [prompts/styles/](prompts/styles/) 의 YAML 이다.
+
+| 키 | 이름 | 한국어 종결 | 쓰는 곳 |
+|---|---|---|---|
+| `plain_report` | 평시문 | ~했다 / 항목은 ~함, ~하였음 | 부대 내부 보고 · **기본값** |
+| `press_release` | 보도자료 | ~했다, ~밝혔다 | 대외 보도자료 (D-04) |
+| `honorific` | 높임말 | ~습니다, ~합니다 | 상급자·상급부대 보고 |
+| `default` | 범용 | ~한다, ~이다 | 그 밖의 문서 |
+
+요청에 `style` 을 넣지 않으면 `NDT_DEFAULT_STYLE`(기본 `plain_report`)을 쓴다.
+
+쓸 수 있는 목록은 `/health` 의 `styles` 에 `{키: 이름}` 으로 나온다. 프론트의
+문체 선택기는 이걸 보고 만들면 키를 추측하지 않아도 된다.
+
+```bash
+curl -s localhost:8080/health | jq .styles
+# {"press_release":"보도자료","plain_report":"평시문","honorific":"높임말","default":"범용"}
+```
+
+### 방향에 따른 비대칭
+
+**문체는 한국어 쪽 구분이다.** 그래서 방향마다 효과가 다르다.
+
+- `en2ko` — 여기서 문체가 결정된다. 종결어미가 갈린다.
+- `ko2en` — **영어에는 높임법이 없다.** 높임말 원문이든 평시문 원문이든 영어
+  출력은 사실상 같다. 그래서 `ko2en` 규칙은 존대를 *만들어내지 말라*는 쪽에
+  집중한다 — `보고드립니다` 를 `humbly reports` 로 옮기는 것이 이 방향에서
+  실제로 자주 나오는 오역이다.
+
+### 실측 (A.X 4.0 Light, en2ko)
+
+원문: `The JCS reported that the ROK Navy completed a combined exercise on the 20th. No additional deployment is planned.`
+
+| 문체 | 출력 |
+|---|---|
+| 보도자료 | …보고**했다**. 추가 배치는 계획되지 **않았다**. |
+| 평시문 | …보고**했다**. 추가 배치는 계획되지 **않았다**. |
+| 높임말 | …보고**했습니다**. 추가 배치는 계획되지 **않았습니다**. |
+
+항목 나열 원문에서는 평시문이 `사상자 발생 없음` 처럼 명사형으로 끝난다.
+
+> 없는 문체를 보내면 `default` 로 처리하고 **응답의 `warnings` 에 `unknown_style`
+> 을 담는다.** 조용히 다른 문체로 떨어지면 사용자가 높임말을 골랐는데 범용체가
+> 나와도 알 방법이 없다.
+
+### 문체를 추가할 때
+
+`prompts/styles/<키>.yaml` 하나만 만들면 자동으로 잡힌다. 필요한 것:
+
+```yaml
+name: 표시이름          # 프론트 선택기에 보인다
+ko2en:
+  register: "..."      # 한 줄 요약
+  rules: ["...", ...]
+en2ko:
+  register: "..."
+  rules: ["...", ...]
+```
+
+**규칙에 구체적인 날짜·이름·수치를 적지 말 것.** 원문에 내용이 없으면 모델이
+문체 예시를 내용으로 가져다 쓴다 — `press_release.yaml` 의 `2026년 8월 19일`
+이 실제로 지어낸 문서의 첫 줄로 나왔다 ([phase2-notes §9](docs/phase2-notes.md)).
+`tests/test_styles.py` 가 구체적 연도를 검사한다.
 
 ## 로그
 
@@ -192,6 +259,28 @@ curl -X POST http://localhost:8080/translate \
 
 기동 직후에는 `/health` 가 `ready: false` 를 반환한다. 인덱스와 Kiwi 풀이
 준비돼야 `/translate` 가 200 을 준다 (그전에는 503).
+
+### 같은 언어를 넣으면
+
+`source` 와 `target` 이 같으면(`ko`→`ko`, `en`→`en`) **원문을 그대로 돌려주고
+경고를 붙인다.** 오류로 막지 않는 이유는, 방향을 잘못 골랐다고 화면이 깨지면
+무엇이 잘못됐는지 알기 어렵기 때문이다. 넣은 글이 그대로 보이면 실수를 바로
+알아챈다.
+
+```jsonc
+{
+  "translation": "<입력 그대로>",
+  "warnings": [{"type": "same_language", "source": "ko", "target": "ko",
+                "detail": "원문과 번역문의 언어가 같아 번역하지 않고 그대로 반환했습니다."}],
+  "meta": {"chunks": 0, "prompt_version": "passthrough", ...}
+}
+```
+
+모델을 부르지 않고 정규화도 거치지 않는다. `prompt_version` 이 `passthrough`
+라서 `translation_logs` 에서 실제 번역과 갈라낼 수 있다 — 섞어서 세면 용어
+준수율(§12.1)이 부풀려진다.
+
+ko↔en 이 아닌 다른 언어는 여전히 거절한다 (422).
 
 `/health` 응답의 `segmenter` 가 `kiwi` 인지 `rule` 인지, `model` 이 무엇인지
 확인하면 지금 무엇으로 돌고 있는지 알 수 있다.

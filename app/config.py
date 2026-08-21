@@ -107,7 +107,8 @@ class Settings(BaseSettings):
 
     # ── 프롬프트 (§7.9) ───────────────────────────────────────
     prompt_preset: Literal["full", "compact"] = "full"
-    default_style: str = "press_release"
+    #: 요청에 style 이 없을 때 쓸 문체 (§7.3). 부대 내부 문서가 기본이다.
+    default_style: str = "plain_report"
 
     # ── 관리 엔드포인트 (§6.7) ────────────────────────────────
     #: /admin/reload 허용 여부. 기본 비활성.

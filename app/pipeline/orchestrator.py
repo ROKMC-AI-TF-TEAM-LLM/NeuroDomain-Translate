@@ -63,14 +63,34 @@ class TranslationOutcome:
     unknown_candidates: list[str] = field(default_factory=list)
 
 
+#: 원문과 번역문의 언어가 같은 경우. 번역할 것이 없다.
+SAME_LANGUAGE_DIRECTIONS = frozenset({"ko2ko", "en2en"})
+
+#: 모델을 부르지 않은 응답의 `prompt_version`.
+#: `translation_logs` 에서 실제 번역과 갈라내는 표식이다 — 이걸 섞어서 세면
+#: 용어 준수율(§12.1)이 부풀려진다.
+PASSTHROUGH_VERSION = "passthrough"
+
+
 def resolve_direction(source: str, target: str) -> str:
-    """`source`/`target` 을 내부 방향 문자열로 바꾼다."""
+    """`source`/`target` 을 내부 방향 문자열로 바꾼다.
+
+    같은 언어끼리면 `ko2ko` / `en2en` 을 준다. 오류로 막지 않는 이유는
+    사용자가 방향을 잘못 골랐을 때 화면이 깨지는 것보다, 넣은 글을 그대로
+    돌려주며 알려주는 편이 낫기 때문이다 — 실수를 바로 알아채고 고칠 수 있다.
+    """
     pair = (source.lower(), target.lower())
     if pair == ("ko", "en"):
         return "ko2en"
     if pair == ("en", "ko"):
         return "en2ko"
+    if pair[0] == pair[1]:
+        return f"{pair[0]}2{pair[1]}"
     raise UnsupportedDirectionError(f"지원하지 않는 언어쌍: {source}→{target} (ko↔en 만 지원)")
+
+
+def is_same_language(direction: str) -> bool:
+    return direction in SAME_LANGUAGE_DIRECTIONS
 
 
 class Orchestrator:
@@ -105,6 +125,30 @@ class Orchestrator:
                 self.settings.max_input_chars,
             )
             raise InputTooLongError(len(text), self.settings.max_input_chars)
+
+        # 같은 언어끼리면 번역할 것이 없다. 원문을 그대로 돌려주고 알린다.
+        # 모델을 부르지 않으므로 프롬프트도 용어 매칭도 거치지 않는다.
+        if is_same_language(direction):
+            return self._passthrough(text, direction, started, request_id, rid)
+
+        # 없는 문체는 조용히 default 로 떨어진다. 사용자가 높임말을 골랐는데
+        # 범용체가 나오면 알 방법이 없으므로 경고로 남긴다 (§4.4).
+        style_warnings: list[dict] = []
+        if not self.prompts.has_style(style):
+            logger.warning(
+                "[%s] 없는 문체: %s → default 로 처리. 사용 가능: %s",
+                rid,
+                style,
+                ", ".join(self.prompts.available_styles()),
+            )
+            style_warnings.append(
+                {
+                    "type": "unknown_style",
+                    "requested": style,
+                    "used": "default",
+                    "available": self.prompts.available_styles(),
+                }
+            )
 
         version = self.prompts.version(direction, style)
         logger.info(
@@ -175,7 +219,9 @@ class Orchestrator:
 
             # ── 6~7. 결합 ─────────────────────────────────────
             translation = _join_chunks(chunks, [r.text for r in results])
-            warnings = _collect_warnings(chunks, results, analysis, direction, self.settings)
+            warnings = style_warnings + _collect_warnings(
+                chunks, results, analysis, direction, self.settings
+            )
             retries = sum(r.retries for r in results)
 
         terms_applied = _render_terms_applied(analysis, direction, fmap)
@@ -212,6 +258,55 @@ class Orchestrator:
                 glossary_version=self.registry.version,
                 chunks=len(chunks),
                 retries=retries,
+                elapsed_ms=elapsed_ms,
+            ),
+        )
+
+    def _passthrough(
+        self, text: str, direction: str, started: float, request_id: str, rid: str
+    ) -> TranslationOutcome:
+        """같은 언어끼리 요청. 원문을 그대로 돌려준다.
+
+        오류(400)로 막지 않는 이유: 사용자가 방향을 잘못 고른 것뿐인데 화면이
+        깨지면 무엇이 잘못됐는지 알기 어렵다. 넣은 글을 그대로 보여주면서
+        경고를 붙이면 실수를 바로 알아채고 고칠 수 있다.
+
+        모델을 부르지 않는다. 번역이 아니므로 용어 준수율에도 잡히면 안 된다 —
+        `prompt_version` 을 `passthrough` 로 남겨 로그에서 걸러낼 수 있게 한다.
+        """
+        lang = direction.split("2")[0]
+        logger.info("[%s] 같은 언어 요청(%s). 원문을 그대로 반환한다", rid, direction)
+
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        meta = {
+            "chunks": 0,
+            "retries": 0,
+            "elapsed_ms": elapsed_ms,
+            "backend": getattr(self.backend, "name", "unknown"),
+            "prompt_version": PASSTHROUGH_VERSION,
+            "glossary_version": self.registry.version,
+        }
+        return TranslationOutcome(
+            translation=text,
+            warnings=[
+                {
+                    "type": "same_language",
+                    "source": lang,
+                    "target": lang,
+                    "detail": "원문과 번역문의 언어가 같아 번역하지 않고 그대로 반환했습니다.",
+                }
+            ],
+            meta=meta,
+            log_record=LogRecord(
+                id=request_id,
+                direction=direction,
+                src=text if self.settings.log_text else "",
+                tgt=text if self.settings.log_text else "",
+                backend=getattr(self.backend, "name", "unknown"),
+                prompt_version=PASSTHROUGH_VERSION,
+                glossary_version=self.registry.version,
+                chunks=0,
+                retries=0,
                 elapsed_ms=elapsed_ms,
             ),
         )

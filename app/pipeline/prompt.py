@@ -23,7 +23,13 @@ from app.backends.base import TermHint
 #: 기록이 없으면 프롬프트 수정이 개선인지 퇴보인지 알 수 없다 (§7.10).
 PROMPT_REVISION = 1
 
-_STYLE_SHORT = {"press_release": "press", "default": "default"}
+#: 프롬프트 버전 id 에 들어갈 짧은 이름 (§7.10). 없으면 style 이름을 그대로 쓴다.
+_STYLE_SHORT = {
+    "press_release": "press",
+    "plain_report": "plain",
+    "honorific": "honor",
+    "default": "default",
+}
 
 
 @dataclass(frozen=True)
@@ -89,6 +95,19 @@ class PromptBuilder:
 
     def available_styles(self) -> list[str]:
         return sorted(self._styles)
+
+    def has_style(self, style: str) -> bool:
+        """그 문체가 실제로 있는가.
+
+        없으면 `_style_block` 이 `default` 로 떨어진다. 조용히 떨어지면
+        사용자가 높임말을 골랐는데 범용체가 나와도 알 방법이 없으므로,
+        호출부가 이걸로 확인해 경고를 남긴다.
+        """
+        return style in self._styles
+
+    def style_names(self) -> dict[str, str]:
+        """style 키 → 사람이 읽을 이름. 프론트의 문체 선택기가 쓴다."""
+        return {key: (data.get("name") or key) for key, data in self._styles.items()}
 
     def _style_block(self, style: str, direction: str) -> dict | None:
         data = self._styles.get(style) or self._styles.get("default")

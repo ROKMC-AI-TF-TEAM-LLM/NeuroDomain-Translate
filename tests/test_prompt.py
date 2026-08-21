@@ -71,7 +71,7 @@ def test_layer_order_is_fixed_then_variable(builder: PromptBuilder) -> None:
     out = render(builder)
     markers = [
         "You are a professional Korean-to-English translator",  # ①
-        "[Style — press_release]",  # ②
+        "[Style —",  # ② 표시 이름이 아니라 블록 존재만 본다
         "[Document context]",  # ③
         "[Glossary — apply exactly]",  # ④
         "[Reference translations from past work",  # ⑤
@@ -92,7 +92,7 @@ def test_blocks_are_separated_by_blank_lines(builder: PromptBuilder) -> None:
     """블록이 붙어 나오면 모델이 섹션을 뭉쳐 읽는다."""
     out = render(builder)
     for header in (
-        "[Style — press_release]",
+        "[Style —",
         "[Document context]",
         "[Glossary — apply exactly]",
         "[Glossary — context-dependent, choose one]",

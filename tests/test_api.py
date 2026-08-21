@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 SAMPLE_KO = "합참은 제7기동군단 예하 부대의 훈련을 참관했다고 밝혔다."
 
 
@@ -43,6 +45,24 @@ def test_matched_terms_are_applied(client) -> None:
 def test_prompt_version_is_recorded(client) -> None:
     """프롬프트 버전 기록이 없으면 수정이 개선인지 퇴보인지 알 수 없다 (§7.10)."""
     res = client.post("/translate", json={"text": SAMPLE_KO, "source": "ko", "target": "en"})
+    assert res.json()["meta"]["prompt_version"] == "ko2en-plain-v1"
+
+
+def test_style_defaults_to_settings(client, settings) -> None:
+    """스키마에 기본값을 박으면 `NDT_DEFAULT_STYLE` 이 영영 적용되지 않는다.
+
+    요청마다 값이 채워져 `req.style or settings.default_style` 의 오른쪽이 죽는다.
+    """
+    assert settings.default_style == "plain_report"
+    res = client.post("/translate", json={"text": SAMPLE_KO, "source": "ko", "target": "en"})
+    assert res.json()["meta"]["prompt_version"] == "ko2en-plain-v1"
+
+
+def test_explicit_style_overrides_the_default(client) -> None:
+    res = client.post(
+        "/translate",
+        json={"text": SAMPLE_KO, "source": "ko", "target": "en", "style": "press_release"},
+    )
     assert res.json()["meta"]["prompt_version"] == "ko2en-press-v1"
 
 
@@ -52,12 +72,47 @@ def test_en2ko_direction(client) -> None:
         json={"text": "The JCS said it observed the drill.", "source": "en", "target": "ko"},
     )
     assert res.status_code == 200
-    assert res.json()["meta"]["prompt_version"] == "en2ko-press-v1"
+    assert res.json()["meta"]["prompt_version"] == "en2ko-plain-v1"
 
 
-def test_same_language_pair_is_rejected(client) -> None:
-    res = client.post("/translate", json={"text": "테스트", "source": "ko", "target": "ko"})
-    assert res.status_code == 400
+# ── 같은 언어 요청 ────────────────────────────────────────────
+
+
+@pytest.mark.parametrize("lang", ["ko", "en"])
+def test_same_language_returns_the_input_unchanged(client, lang: str) -> None:
+    """방향을 잘못 골랐다고 화면이 깨지면 무엇이 잘못됐는지 알기 어렵다.
+
+    넣은 글을 그대로 보여주면서 경고를 붙이면 실수를 바로 알아채고 고칠 수 있다.
+    """
+    text = "합참은 밝혔다." if lang == "ko" else "The JCS said."
+    res = client.post("/translate", json={"text": text, "source": lang, "target": lang})
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["translation"] == text
+    assert body["terms_applied"] == []
+
+    same = [w for w in body["warnings"] if w["type"] == "same_language"]
+    assert same
+    assert same[0]["source"] == lang
+    assert same[0]["target"] == lang
+    assert same[0]["detail"]
+
+
+def test_same_language_does_not_call_the_model(client) -> None:
+    """번역이 아니므로 모델을 부르지 않는다. 청크도 0 이다."""
+    res = client.post("/translate", json={"text": "합참은 밝혔다.", "source": "ko", "target": "ko"})
+    meta = res.json()["meta"]
+    assert meta["chunks"] == 0
+    assert meta["retries"] == 0
+    assert meta["prompt_version"] == "passthrough"
+
+
+def test_same_language_preserves_formatting(client) -> None:
+    """정규화도 거치지 않는다. 넣은 그대로여야 한다."""
+    text = "  합참은 밝혔다.\n\n  국방부는 침묵했다.  "
+    res = client.post("/translate", json={"text": text, "source": "ko", "target": "ko"})
+    assert res.json()["translation"] == text
 
 
 def test_unsupported_language_is_rejected(client) -> None:

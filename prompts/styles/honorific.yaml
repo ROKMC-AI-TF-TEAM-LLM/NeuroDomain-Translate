@@ -1,0 +1,35 @@
+# 문체 프리셋: 높임말 — 계획서 §7.3
+#
+# 상급자 · 상급부대 대상 보고체. 합쇼체 '~습니다 / ~합니다' 로 통일한다.
+#
+# 방향별 비대칭에 유의할 것:
+#   en2ko  이 프리셋의 본령이다. 한국어 종결어미를 결정한다.
+#   ko2en  **영어에는 높임법이 없다.** 높임말 원문이든 평시문 원문이든 영어
+#          출력은 사실상 같다. 그래서 ko2en 규칙은 존대를 만들어내지 말라는
+#          쪽에 집중한다 — 겸양 표현을 'humbly', 'respectfully' 로 옮기는 것이
+#          이 방향에서 실제로 자주 나오는 오역이다.
+#
+# ⚠ 규칙에 구체적인 날짜 · 이름 · 수치를 적지 말 것 (docs/phase2-notes.md §9).
+name: 높임말
+
+ko2en:
+  register: "Formal English. English has no honorific system — do not invent one."
+  rules:
+    - "Korean honorific and humble forms do not carry into English.
+       Translate the content, not the deference level."
+    - "'보고드립니다' → 'reports' or 'submits'. Never 'humbly reports'.
+       Do not add words like 'humbly', 'respectfully', 'kindly' — they are not content."
+    - "'~하셨습니다' and '~하였습니다' become the same English past tense."
+    - "Rank precedes surname: 'Colonel Kim'."
+    - "Preserve all numbers, dates, and units exactly."
+
+en2ko:
+  register: "상급자 보고체. 종결어미를 '~습니다 / ~합니다' 로 통일한다."
+  rules:
+    - "모든 문장을 '~습니다' 형태로 끝낸다. '~했다', '~함', '~하였음' 을 섞지 않는다."
+    - "화자 자신의 행위는 겸양으로: '보고합니다', '건의합니다', '조치하겠습니다'."
+    - "사물이나 상황에 존대를 붙이지 않는다: '결과가 나오셨습니다'(X) → '결과가 나왔습니다'(O)."
+    - "존대를 겹쳐 쓰지 않는다: '하시겠으십니다'(X) → '하시겠습니다'(O)."
+    - "직함은 이름 앞: '김OO 대령'."
+    - "날짜: 'YYYY년 M월 D일'."
+    - "부대명·계급은 국군 공식 용어를 쓴다. 직역 금지."
