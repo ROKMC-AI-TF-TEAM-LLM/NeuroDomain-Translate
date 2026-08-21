@@ -1,6 +1,6 @@
 # 문체 프리셋: 범용 — 계획서 §7.3
 # 보도자료가 아닌 일반 문서에 쓴다 (D-04 "범용 사용").
-name: default
+name: 범용
 
 ko2en:
   register: "Neutral formal register. Clear and direct."

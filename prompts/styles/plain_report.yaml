@@ -1,0 +1,37 @@
+# 문체 프리셋: 평시문 — 계획서 §7.3
+#
+# 군 내부 보고문체. 종결어미 '~했다' 와 명사형 '~함 / ~하였음' 을 쓴다.
+# 상황보고 · 일일보고 · 결과보고처럼 부대 안에서 오가는 문서가 대상이다.
+#
+# ⚠ 규칙에 구체적인 날짜 · 이름 · 수치를 적지 말 것.
+#   원문에 내용이 없으면 모델이 **문체 예시를 내용으로 가져다 쓴다.**
+#   실제로 press_release.yaml 의 날짜 예시가 그대로 출력에 나온 적이 있다
+#   (docs/phase2-notes.md §9). 형식만 보여주고 값은 자리표시자로 둔다.
+name: 평시문
+
+ko2en:
+  register: "Military report style. Concise and factual. Active voice."
+  rules:
+    - "The source may use nominal endings (~함, ~음, ~하였음) and drop particles.
+       Render each as a complete English sentence with a subject and a verb."
+    - "One fact per sentence. Do not merge separate report items into one sentence."
+    - "Rank precedes surname: 'Colonel Kim', not 'Kim Colonel'."
+    - "Unit designations: 'the 7th Maneuver Corps'."
+    - "Times in 24-hour form: '1400' or '1400 hours'. Dates: 'D Month YYYY' or 'Month D'."
+    - "Do not add hedging, commentary, or transitions that are not in the source."
+
+en2ko:
+  register: "군 보고문체. 기본은 '~했다'. 항목 나열일 때만 명사형 '~함 / ~하였음'."
+  rules:
+    - "**기본 종결은 '~했다' 다.** 원문이 줄글이면 처음부터 끝까지 '~했다' 로 쓴다."
+    - "원문이 항목 나열(개조식)일 때만 '~함 / ~하였음' 을 쓰고, 그때도 모든
+       항목을 같은 형태로 맞춘다."
+    - "**한 문서 안에서 두 방식을 섞지 않는다.** 앞 문장이 '~했다' 로 끝났으면
+       뒤 문장도 '~했다' 로 끝낸다. 이것을 가장 우선하여 지킨다."
+    - "높임말을 쓰지 않는다. '~습니다', '~드립니다' 금지."
+    - "한 문장에 하나의 사실만 담는다. 수식어를 줄인다."
+    - "피동을 능동으로 바꾼다: '계획되지 않았다' → '계획은 없다',
+       '실시되었다' → '실시했다'."
+    - "직함은 이름 앞: '김OO 대령'."
+    - "날짜: 'YYYY년 M월 D일' 또는 'M월 D일'. 시각은 24시간제 'HHMM'."
+    - "부대명·계급은 국군 공식 용어를 쓴다. 직역 금지."

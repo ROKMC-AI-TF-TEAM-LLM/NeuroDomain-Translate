@@ -28,7 +28,7 @@ def record(**overrides) -> LogRecord:
         "src": "합참은 밝혔다.",
         "tgt": "The JCS said.",
         "backend": "mock",
-        "prompt_version": "ko2en-press-v1",
+        "prompt_version": "ko2en-plain-v1",
         "glossary_version": 1,
         "chunks": 1,
         "retries": 0,
@@ -152,4 +152,4 @@ async def test_translate_endpoint_writes_a_log(client, data_dir: Path) -> None:
         "SELECT direction, backend, prompt_version, chunks FROM translation_logs"
     ).fetchall()
     conn.close()
-    assert rows == [("ko2en", "mock", "ko2en-press-v1", 1)]
+    assert rows == [("ko2en", "mock", "ko2en-plain-v1", 1)]

@@ -61,6 +61,7 @@ async def health(
         segmenter=stats.get("segmenter"),
         matcher=stats.get("matcher"),
         tm_size=stats.get("tm_size"),
+        styles=request.app.state.prompts.style_names(),
         model=getattr(backend, "served_name", None) or None,
     )
 

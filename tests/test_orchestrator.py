@@ -15,6 +15,7 @@ from app.pipeline.orchestrator import (
     InputTooLongError,
     Orchestrator,
     UnsupportedDirectionError,
+    is_same_language,
     resolve_direction,
 )
 from app.pipeline.prompt import PromptBuilder
@@ -38,9 +39,45 @@ def test_resolve_direction() -> None:
     assert resolve_direction("EN", "KO") == "en2ko"
 
 
-def test_same_language_is_rejected() -> None:
+def test_same_language_gets_its_own_direction() -> None:
+    """오류로 막지 않는다. 원문을 그대로 돌려주는 경로로 보낸다."""
+    assert resolve_direction("ko", "ko") == "ko2ko"
+    assert resolve_direction("EN", "EN") == "en2en"
+    assert is_same_language("ko2ko")
+    assert not is_same_language("ko2en")
+
+
+def test_unsupported_language_is_still_rejected() -> None:
     with pytest.raises(UnsupportedDirectionError):
-        resolve_direction("ko", "ko")
+        resolve_direction("ko", "ja")
+
+
+@pytest.mark.asyncio
+async def test_passthrough_does_not_call_the_backend(settings) -> None:
+    """번역이 아니므로 모델을 부르면 안 된다. 요금과 지연이 그냥 낭비다."""
+    backend = MockBackend()
+    orch = await build(settings, backend)
+    outcome = await orch.run("합참은 밝혔다.", "ko2ko", "plain_report")
+
+    assert backend.call_count == 0
+    assert outcome.translation == "합참은 밝혔다."
+    assert outcome.meta["chunks"] == 0
+
+
+@pytest.mark.asyncio
+async def test_passthrough_is_marked_in_the_log(settings) -> None:
+    """`translation_logs` 에서 실제 번역과 갈라낼 수 있어야 한다.
+
+    섞어서 세면 용어 준수율(§12.1)이 부풀려진다.
+    """
+    orch = await build(settings, MockBackend())
+    outcome = await orch.run("합참은 밝혔다.", "ko2ko", "plain_report")
+
+    record = outcome.log_record
+    assert record is not None
+    assert record.direction == "ko2ko"
+    assert record.prompt_version == "passthrough"
+    assert record.terms_applied == []
 
 
 # ── 검증 · 재호출 (§6.5) ──────────────────────────────────────

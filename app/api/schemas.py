@@ -25,7 +25,10 @@ class TranslateRequest(BaseModel):
     text: str
     source: Lang
     target: Lang
-    style: str = "press_release"
+    #: 문체 (§7.3). 비우면 `NDT_DEFAULT_STYLE` 을 쓴다.
+    #: 여기에 기본값을 박으면 설정값이 영영 적용되지 않는다 — 요청마다 항상
+    #: 값이 채워져 `req.style or settings.default_style` 의 오른쪽이 죽는다.
+    style: str | None = None
 
 
 class TermApplied(BaseModel):
@@ -79,6 +82,9 @@ class HealthResponse(BaseModel):
     matcher: str | None = None
     #: TM 세그먼트 수. 0 이면 few-shot 예시 없이 동작한다.
     tm_size: int | None = None
+    #: 쓸 수 있는 문체 (§7.3). `{키: 표시이름}`.
+    #: 프론트의 문체 선택기가 이걸 보고 만들면 키를 추측하지 않아도 된다.
+    styles: dict[str, str] | None = None
     #: 모델 서버가 서빙 중인 모델 이름. mock 이면 None.
     model: str | None = None
     detail: str | None = None
