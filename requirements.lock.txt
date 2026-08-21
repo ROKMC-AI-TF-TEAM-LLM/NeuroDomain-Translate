@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # requirements.lock.txt — 계획서 §10 정본
 #
 # 생성: 2026-08-19, Phase 0 작업 7
