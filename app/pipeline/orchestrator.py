@@ -33,6 +33,7 @@ from app.pipeline.verify import (
     Violation,
     check_language,
     check_length,
+    check_refusal,
     verify,
 )
 from app.store.runtime import LogRecord
@@ -634,6 +635,10 @@ def _collect_warnings(
         # 타깃 언어로 쓰이지 않았으면 번역이 아니다. 길이 비율로는 못 잡는다.
         if check_language(result.text, direction):
             warnings.append({"type": "wrong_language", "chunk": chunk.index})
+        # 번역 대신 거절하거나 되물은 경우. 한→영에서 영어로 거절하면 언어
+        # 검사가 통과시키고, 원문이 길면 길이 비율도 정상 범위에 든다.
+        if check_refusal(result.text):
+            warnings.append({"type": "refusal", "chunk": chunk.index})
     for text in analysis.unknown_candidates:
         warnings.append({"type": "unknown_candidate", "text": text})
     return warnings
@@ -665,6 +670,13 @@ def _log_warnings(rid: str, warnings: list[dict]) -> None:
         elif kind == "wrong_language":
             logger.warning(
                 "[%s] 타깃 언어가 아님: 청크 %d. 번역 대신 다른 응답이 나왔을 수 있다",
+                rid,
+                w.get("chunk"),
+            )
+        elif kind == "refusal":
+            logger.warning(
+                "[%s] 모델이 번역을 거절했다: 청크 %d. 프롬프트가 뚫린 사례이므로 "
+                "원문을 기록해 둘 것",
                 rid,
                 w.get("chunk"),
             )

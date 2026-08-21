@@ -59,6 +59,41 @@ _LATIN_CHARS = re.compile(r"[A-Za-z]")
 #: 짧은 표기가 있다.
 LANGUAGE_CHECK_MIN_CHARS = 20
 
+# ── 거부 탐지 ─────────────────────────────────────────────────
+#
+# 모델이 번역을 내놓는 대신 거절하거나 되묻는 경우다. 실제로 `히히 집에 가야`
+# 에 "I'm sorry, but I can't fulfill this request as per the given rules." 가
+# 나왔다. 프롬프트로 상당 부분 막았지만 프롬프트는 모델과 입력에 따라 뚫린다.
+#
+# **오탐이 위험하다.** `죄송합니다` 를 옮기면 정상 번역에 "I'm sorry" 가 들어간다.
+# 그래서 두 조건을 모두 만족할 때만 잡는다.
+#   1) 거절 · 사과 · 되묻기 표현
+#   2) **작업 자체를 가리키는 말** (translate, 번역, request, 입력 …)
+# 정상 번역이 자기가 하는 작업을 언급하는 일은 드물다.
+
+_REFUSAL_CUES = re.compile(
+    r"""(?ix)
+    \b i\s?'?\s?m\ sorry \b
+  | \b i\ (?: cannot | can\s?'?\s?t | am\ unable\ to ) \b
+  | \b as\ an\ ai \b
+  | \b (?: please | could\ you ) \ (?: provide | clarify | specify ) \b
+  | \b there\ is\ no \b
+  | \b unable\ to\ (?: fulfill | comply | process ) \b
+  | 죄송
+  | 할\ ?수\ ?없
+  | 제공해\ ?주
+  | 알려\ ?주
+    """
+)
+
+_TASK_WORDS = re.compile(
+    r"(?ix) \b (?: translat\w* | request | instruction | input | prompt | guidelines? ) \b"
+    r" | 번역 | 요청 | 입력 | 지시"
+)
+
+#: 출력 전체가 괄호로 묶인 설명. `(Translation provided in Korean …)` 형태.
+_WHOLE_PARENTHETICAL = re.compile(r"^\s*[(（].*[)）]\s*$", re.DOTALL)
+
 
 @dataclass(frozen=True)
 class Violation:
@@ -199,3 +234,27 @@ def check_language(tgt: str, direction: str, min_chars: int = LANGUAGE_CHECK_MIN
         return False
     pattern = _HANGUL_CHARS if direction == "en2ko" else _LATIN_CHARS
     return pattern.search(body) is None
+
+
+def check_refusal(tgt: str) -> bool:
+    """모델이 번역 대신 거절하거나 되물었는가. 그러면 True(이상)를 준다.
+
+    실제로 `히히 집에 가야` 에 다음이 나왔다.
+        "I'm sorry, but I can't fulfill this request as per the given rules."
+
+    프롬프트에 "ALWAYS output a translation" 을 넣어 대부분 막았지만, 프롬프트는
+    모델과 입력에 따라 뚫린다. 길이·언어 검사도 이런 형태를 늘 잡지는 못한다 —
+    한→영에서 영어로 거절하면 언어 검사가 통과시키고, 원문이 길면 길이 비율도
+    정상 범위에 든다.
+
+    **오탐을 피하려고 두 조건을 모두 요구한다.** 거절 표현만으로 잡으면
+    `죄송합니다` 를 옮긴 정상 번역이 걸린다. 작업 자체를 가리키는 말이 함께
+    있어야 거절로 본다.
+    """
+    body = tgt.strip()
+    if not body:
+        return False
+    # 출력 전체가 괄호 안 설명이고 작업을 언급하면 번역이 아니다.
+    if _WHOLE_PARENTHETICAL.match(body) and _TASK_WORDS.search(body):
+        return True
+    return bool(_REFUSAL_CUES.search(body) and _TASK_WORDS.search(body))

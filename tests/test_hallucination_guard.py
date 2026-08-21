@@ -20,6 +20,7 @@ from app.pipeline.verify import (
     DEFAULT_MAX_EXPANSION,
     check_language,
     check_length,
+    check_refusal,
 )
 
 #: 사고 당시 실제 출력 (일부).
@@ -139,6 +140,64 @@ def test_short_output_skips_language_check() -> None:
 def test_mixed_output_passes() -> None:
     """한국어 번역에 영문 약어가 섞이는 것은 정상이다."""
     assert check_language("합참은 K2 흑표 전차를 배치했다고 밝혔다.", "en2ko") is False
+
+
+# ── 거부 탐지 ─────────────────────────────────────────────────
+
+#: 실제로 `히히 집에 가야` 를 넣었을 때 나온 출력.
+REFUSAL = "I'm sorry, but I can't fulfill this request as per the given rules."
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        REFUSAL,
+        "I'm sorry, but the provided instruction does not contain a specific "
+        "text to translate. Please provide the text you would like translated.",
+        "As an AI, I cannot translate this request.",
+        "(Translation provided in Korean following the given style guidelines)",
+        "죄송합니다. 번역할 수 없습니다.",
+        "번역할 내용을 제공해 주세요.",
+    ],
+)
+def test_refusals_are_detected(text: str) -> None:
+    assert check_refusal(text) is True
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # **오탐이 위험하다.** 아래는 전부 정상 번역이다.
+        "I'm sorry.",  # `죄송합니다` 의 번역
+        "I'm sorry for the delay in reporting.",
+        "죄송합니다.",  # `I'm sorry` 의 번역
+        "그는 참석할 수 없다고 밝혔다.",  # '할 수 없' 이 들어간 정상 문장
+        "The unit cannot proceed without authorization.",
+        "The JCS said a combined exercise will be conducted.",
+        "합동참모본부는 연합훈련을 실시한다고 밝혔다.",
+        "번역 담당관이 회의에 참석했다.",  # '번역' 이 내용어로 쓰인 경우
+        "",
+    ],
+)
+def test_normal_translations_are_not_flagged_as_refusals(text: str) -> None:
+    """거절 표현만으로 잡으면 `죄송합니다` 를 옮긴 번역이 걸린다.
+
+    작업 자체를 가리키는 말이 함께 있어야 거절로 본다.
+    """
+    assert check_refusal(text) is False
+
+
+def test_refusal_needs_both_signals() -> None:
+    """사과만으로도, 작업 언급만으로도 잡지 않는다. 둘 다 있어야 한다."""
+    assert check_refusal("I'm sorry about the delay.") is False
+    assert check_refusal("The translation was completed on time.") is False
+    assert check_refusal("I'm sorry, I cannot complete this translation.") is True
+
+
+def test_refusal_survives_the_language_check() -> None:
+    """한→영 거절은 영어라서 언어 검사를 통과한다. 그래서 별도 검사가 필요하다."""
+    assert check_language(REFUSAL, "ko2en") is False
+    assert check_refusal(REFUSAL) is True
 
 
 # ── 파이프라인 결합 ───────────────────────────────────────────
