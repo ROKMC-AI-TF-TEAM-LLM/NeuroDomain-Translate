@@ -83,12 +83,14 @@ _REFUSAL_CUES = re.compile(
   | 할\ ?수\ ?없
   | 제공해\ ?주
   | 알려\ ?주
+  | 주어지지\ ?않
+  | 내용이\ ?없
     """
 )
 
 _TASK_WORDS = re.compile(
     r"(?ix) \b (?: translat\w* | request | instruction | input | prompt | guidelines? ) \b"
-    r" | 번역 | 요청 | 입력 | 지시"
+    r" | 번역 | 요청 | 입력 | 지시 | 텍스트 | 문장"
 )
 
 #: 출력 전체가 괄호로 묶인 설명. `(Translation provided in Korean …)` 형태.

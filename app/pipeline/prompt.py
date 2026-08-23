@@ -23,6 +23,15 @@ from app.backends.base import TermHint
 #: 기록이 없으면 프롬프트 수정이 개선인지 퇴보인지 알 수 없다 (§7.10).
 PROMPT_REVISION = 1
 
+#: 원문을 감싸는 표식 (§7.1 ⑦).
+#:
+#: user 메시지에 원문만 덩그러니 넣으면 `target`, `string` 같은 한 단어가
+#: **모델에게 내린 지시**로 읽힌다. 실제로 `target` 을 넣었을 때
+#: "I can't process the instruction \"target\"" 이 나왔다.
+#: 경계를 씌우면 그 안은 무조건 내용이 된다.
+SOURCE_OPEN = "<<<SOURCE_TEXT>>>"
+SOURCE_CLOSE = "<<<END_SOURCE_TEXT>>>"
+
 #: 프롬프트 버전 id 에 들어갈 짧은 이름 (§7.10). 없으면 style 이름을 그대로 쓴다.
 _STYLE_SHORT = {
     "press_release": "press",
@@ -174,6 +183,16 @@ class PromptBuilder:
         """재호출 프롬프트 (§7.8). 대화형이 아니라 새 요청으로 구성한다."""
         template = self.env.get_template(f"{direction}/retry.j2")
         return template.render(previous=previous, source=source, missing=missing)
+
+    @staticmethod
+    def build_user(text: str) -> str:
+        """원문을 표식으로 감싼 user 메시지 (§7.1 ⑦).
+
+        표식 안은 전부 내용이다. 한 단어여도, 명령처럼 보여도, 모델에게 던지는
+        질문처럼 보여도 번역 대상이다. 이것 없이는 `target` 한 단어가 지시로
+        읽혀 모델이 번역을 거절한다.
+        """
+        return f"{SOURCE_OPEN}\n{text}\n{SOURCE_CLOSE}"
 
     def render_analyze(self, name: str, **context) -> str:
         """보조 판정 프롬프트 (prompts/analyze/). 군종 판정 등 (§7.4, R-05)."""

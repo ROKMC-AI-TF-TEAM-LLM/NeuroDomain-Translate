@@ -16,11 +16,28 @@ from dataclasses import dataclass
 #: 모델이 지시를 어기고 붙이는 머리말 (§7.7).
 #: 프롬프트만 믿지 말고 후처리로도 걷어낸다. 작은 모델일수록 이 지시를 어긴다.
 PREAMBLE_PATTERNS = [
-    re.compile(r"^(Here is|Here's) the translation:?\s*", re.IGNORECASE),
-    re.compile(r"^(번역|번역문|번역 결과)\s*:?\s*"),
+    re.compile(r"^(Here is|Here's) the (?:\w+ )?translation:?\s*", re.IGNORECASE),
+    re.compile(r"^The (?:\w+ )?translation is:?\s*", re.IGNORECASE),
+    # "I'll translate the given Korean text into English." 형태의 작업 서술.
+    # 7B 모델이 짧은 구어체 입력에서 실제로 이렇게 낸다.
+    re.compile(
+        r"^I(?:'ll|'m going to| will| am going to| need to| have)\s+translat\w*[^.\n]*?[.:]\s*",
+        re.IGNORECASE,
+    ),
+    # 콜론이나 줄바꿈을 **반드시** 요구한다. 없으면 `번역 담당관이…`,
+    # `결과적으로…` 같은 정상 문장의 첫 낱말을 잘라먹는다.
+    re.compile(r"^(?:번역문|번역 결과|번역|결과)\s*(?::|\n)\s*"),
+    # 비탐욕이어야 한다. `[^.\n]*[.:]` 는 문장 끝 마침표까지 삼켜 본문을 통째로
+    # 날린다 — `주어진 텍스트를 번역하면: 합참이 밝혔다.` 가 빈 문자열이 됐다.
+    re.compile(r"^(?:주어진\s*)?(?:텍스트|문장)(?:을|를)\s*번역\w*[^.\n]*?[.:]\s*"),
     re.compile(r"^Translation:?\s*", re.IGNORECASE),
     re.compile(r"^\[mock:[a-z0-9]+\]\s*"),  # mock 백엔드 표식
 ]
+
+#: 원문을 감싼 표식 (`prompt.SOURCE_OPEN` / `SOURCE_CLOSE`).
+#: 모델이 되풀이해 출력하는 일이 있어 걷어낸다. prompt.py 에서 import 하지 않고
+#: 패턴으로 잡는 이유는 순환 import 를 피하기 위해서다.
+_SOURCE_MARKER = re.compile(r"<<<\s*/?\s*(?:END_)?SOURCE_TEXT\s*>>>")
 
 _TRAILING_WS = re.compile(r"[ \t]+\n")
 _HSPACE_RUN = re.compile(r"[ \t]{2,}")
@@ -138,8 +155,8 @@ def normalize_with_map(text: str, direction: str) -> tuple[str, list[int]]:
 
 
 def strip_preamble(text: str) -> str:
-    """모델이 붙인 머리말과 감싼 따옴표를 걷어낸다 (§7.7)."""
-    out = text.strip()
+    """모델이 붙인 머리말 · 원문 표식 · 감싼 따옴표를 걷어낸다 (§7.7)."""
+    out = _SOURCE_MARKER.sub("", text).strip()
     changed = True
     while changed:
         changed = False

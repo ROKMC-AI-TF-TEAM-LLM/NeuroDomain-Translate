@@ -372,6 +372,9 @@ class Orchestrator:
                 style=style,
                 global_context={
                     "system_prompt": system_prompt,
+                    # 원문을 표식으로 감싼다. 없으면 `target` 한 단어가 모델에게
+                    # 내린 지시로 읽혀 번역을 거절한다.
+                    "user_prompt": self.prompts.build_user(chunk.text),
                     "chunk_index": chunk.index,
                     "total_chunks": len(all_chunks),
                     "service_branch": analysis.service_branch,

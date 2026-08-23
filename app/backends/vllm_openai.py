@@ -103,7 +103,8 @@ class OpenAICompatBackend:
         retry_prompt = req.global_context.get("retry_prompt")
 
         # 재호출은 대화형이 아니라 **새 요청**으로 구성한다 (§7.8).
-        user_content = retry_prompt if retry_prompt else req.text
+        # 평시에는 표식으로 감싼 원문을 쓴다 — 없으면 원문 그대로 (§7.1 ⑦).
+        user_content = retry_prompt or req.global_context.get("user_prompt") or req.text
 
         messages = []
         if system_prompt:

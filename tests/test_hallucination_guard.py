@@ -158,6 +158,8 @@ REFUSAL = "I'm sorry, but I can't fulfill this request as per the given rules."
         "(Translation provided in Korean following the given style guidelines)",
         "죄송합니다. 번역할 수 없습니다.",
         "번역할 내용을 제공해 주세요.",
+        "문장이 주어지지 않았습니다.",
+        "입력된 내용이 없습니다.",
     ],
 )
 def test_refusals_are_detected(text: str) -> None:

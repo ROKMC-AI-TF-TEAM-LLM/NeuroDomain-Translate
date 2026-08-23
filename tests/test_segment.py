@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.pipeline.normalize import normalize, strip_preamble
 from app.pipeline.segment import build_chunks, split_paragraphs, split_sentences
 
@@ -58,6 +60,47 @@ def test_strip_preamble_removes_model_chatter() -> None:
     assert strip_preamble("Here is the translation: The JCS said") == "The JCS said"
     assert strip_preamble("번역: 합참이 밝혔다") == "합참이 밝혔다"
     assert strip_preamble('"The JCS said"') == "The JCS said"
+
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        # 7B 모델이 짧은 구어체 입력에서 실제로 낸 형태들
+        (
+            "I'll translate the given Korean text into English.\n\n"
+            'The translation is: "Hey, I need to go home."',
+            "Hey, I need to go home.",
+        ),
+        (
+            "I will translate this text.\nThe JCS said.",
+            "The JCS said.",
+        ),
+        ("Here is the English translation: The JCS said.", "The JCS said."),
+        ("결과:\n\n합참이 밝혔다.", "합참이 밝혔다."),
+        ("주어진 텍스트를 번역하면: 합참이 밝혔다.", "합참이 밝혔다."),
+    ],
+)
+def test_strip_preamble_removes_task_narration(raw: str, expected: str) -> None:
+    """§7.7 — 프롬프트만 믿지 말고 후처리로도 걷어낸다.
+
+    작은 모델일수록 "Output ONLY the translation" 을 어기고 자기가 무엇을
+    하는지 설명한 뒤 번역을 붙인다.
+    """
+    assert strip_preamble(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # 내용에 translate/번역 이 들어간 정상 번역은 건드리면 안 된다
+        "The unit will translate the manual into Korean.",
+        "번역 담당관이 회의에 참석했다.",
+        "I need to go home.",
+        "결과적으로 훈련은 성공했다.",
+    ],
+)
+def test_strip_preamble_keeps_real_content(text: str) -> None:
+    assert strip_preamble(text) == text
 
 
 def test_strip_preamble_keeps_internal_quotes() -> None:
