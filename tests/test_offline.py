@@ -118,7 +118,7 @@ def test_all_app_modules_import_offline() -> None:
         try:
             importlib.import_module(info.name)
         except ModuleNotFoundError:
-            # requirements-nlp / serve 미설치는 정상이다 (Phase 0 은 코어만 깐다).
+            # 선택 의존성(kiwipiepy, pyahocorasick 등) 미설치는 정상이다.
             continue
         except Exception as e:  # noqa: BLE001 - 원인 종류와 무관하게 보고한다
             failures.append(f"{info.name}: {type(e).__name__}: {e}")

@@ -79,7 +79,7 @@ def kiwi_client(settings: Settings):
 
     풀 생성에 시간이 걸리므로 꼭 필요한 테스트만 쓴다.
     """
-    pytest.importorskip("kiwipiepy", reason="requirements-nlp.txt 미설치")
+    pytest.importorskip("kiwipiepy", reason="requirements.txt 미설치")
     pytest.importorskip("kiwipiepy_model", reason="kiwipiepy-model 미설치")
     app = create_app(settings.model_copy(update={"use_kiwi": True, "kiwi_pool_size": 1}))
     with TestClient(app) as c:

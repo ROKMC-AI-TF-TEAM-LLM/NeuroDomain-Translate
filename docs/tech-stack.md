@@ -41,18 +41,24 @@ CI          없음 (2026-08-23 제거). 검사는 로컬에서 사람이 실행
 
 ## 2. 의존성 파일 구조와 정책
 
-의존성은 `pyproject.toml`이 아니라 **5개의 `requirements-*.txt`가 정본**이다
+의존성은 `pyproject.toml`이 아니라 **`requirements*.txt`가 정본**이다
 (계획서 §10). `pyproject.toml`에는 의존성을 중복 기재하지 않는다 — 반입 번들이
 `requirements.lock.txt`와 1:1 대응해야 하기 때문이다.
 
+**파일은 2개다(D-25, 2026-09-01).** 원안은 목적별로 5개를 뒀지만, 갈리는 결정은
+**"폐쇄망에 반입하는가"** 하나뿐이라 그 축으로만 나눴다. 나머지 구분(코어/NLP/
+도구)은 파일 안 주석으로 남겼다.
+
 | 파일 | 용도 | 폐쇄망 반입 | GPU 필요 |
 |---|---|---|---|
-| [requirements-core.txt](../requirements-core.txt) | 서버 골격 (FastAPI 등) | ✅ | ✗ |
-| [requirements-nlp.txt](../requirements-nlp.txt) | 형태소·매칭·TM 검색 | ✅ | ✗ |
-| [requirements-serve.txt](../requirements-serve.txt) | 모델 서빙 (torch/vLLM) | ✅ (Phase 3부터) | ✅ |
-| [requirements-dev.txt](../requirements-dev.txt) | 테스트·린트 | ✗ | ✗ |
-| [requirements-tools.txt](../requirements-tools.txt) | 용어집/TM 구축 배치 도구 | ✗ | ✗ |
-| [requirements.lock.txt](../requirements.lock.txt) | `pip download`로 해석된 실제 버전 (§10.6 산출물) | — | — |
+| [requirements.txt](../requirements.txt) | 런타임 전부 (FastAPI·매칭·형태소·TM) | ✅ | ✗ |
+| [requirements-dev.txt](../requirements-dev.txt) | 테스트·린트·용어집 도구 (`-r requirements.txt` 포함) | ✗ | ✗ |
+| [requirements.lock.txt](../requirements.lock.txt) | `pip download`로 해석된 실제 버전 (§10.4 산출물) | — | — |
+
+모델 서빙(torch/transformers/vLLM)은 **어느 파일에도 없다.** 번역기 앱은
+`torch`를 import하지 않고 vLLM은 HTTP로 부르는 별도 서비스라, DB를
+requirements에 적지 않는 것과 같은 이유로 뺐다. GPU 서버에 따로 설치하며
+버전은 `requirements.txt` 하단 주석에 기록돼 있다(§10.3).
 
 **버전 정책(D-20)**: `mars-ai-server`(같은 폐쇄망 서버를 공유할 가능성이 있는
 별도 프로젝트)와 겹치는 라이브러리는 그쪽 버전을 정본으로 삼는다. 그 결과
@@ -137,13 +143,14 @@ CI          없음 (2026-08-23 제거). 검사는 로컬에서 사람이 실행
   이름은 계획서 §4.2의 파일명 지정을 지키기 위한 별칭으로 남겨뒀다.
 - `httpx.MockTransport`로 실제 서버 없이 [tests/test_backend_openai.py](../tests/test_backend_openai.py)가 프로토콜 레벨 테스트를 수행한다.
 
-### orjson / structlog / tenacity
+### orjson / structlog / tenacity — 제거됨 (D-25)
 
-- `orjson`, `structlog`, `tenacity`는 `requirements-core.txt`에 고정돼
-  있지만, 코드 전수 조사 결과 **현재 직접 사용하는 지점은 없다** — 표준
-  `json`/`logging`을 쓰고 있다(로그 JSON 직렬화는 `store/runtime.py`에서
-  표준 `json.dumps(ensure_ascii=False)`). 향후 구조화 로깅·재시도 로직을
-  도입할 자리로 미리 고정해둔 것으로 보인다.
+- 계획서 §10.1 원안에 있었으나 코드 전수 조사 결과 **직접 사용하는 지점이
+  없었다** — 표준 `json`/`logging`을 쓴다(로그 JSON 직렬화는
+  `store/runtime.py`에서 표준 `json.dumps(ensure_ascii=False)`).
+  "언젠가 쓸 자리"로 반입 번들을 키울 이유가 없어 뺐다. 구조화 로깅이나
+  재시도 로직을 실제로 도입할 때 다시 넣으면 된다.
+- 같은 이유로 `python-multipart`(파일 업로드 없음)도 빠졌다.
 
 ---
 
@@ -210,14 +217,10 @@ CI          없음 (2026-08-23 제거). 검사는 로컬에서 사람이 실행
 
 ### regex / rapidfuzz
 
-- `regex`는 표준 `re`보다 유니코드 처리가 강력해 `app/glossary/matcher.py`,
-  `app/glossary/morph.py`의 미등록 후보 탐지 정규식 등에서 실질적으로는
-  표준 `re` 모듈이 쓰이고 있다(코드 확인 결과 `import re`가 대부분). 별도
-  `regex` 패키지 직접 import는 발견되지 않았다 — 반입 목록에는 있으나
-  현재 잠재 의존성.
-- `rapidfuzz`도 `requirements-nlp.txt`에 고정돼 있지만 현재 코드베이스
-  전수 검색 결과 직접 사용처가 없다. 향후 퍼지 매칭 강화용으로 미리
-  반입해둔 것으로 보인다.
+- `regex`와 `rapidfuzz`는 계획서 §10.2 원안에 있었으나 **제거됐다(D-25)**.
+  `app/glossary/matcher.py`와 `app/glossary/morph.py`는 표준 `re`만 쓰고,
+  퍼지 매칭은 구현돼 있지 않다. 유니코드 정규화가 실제로 표준 `re`의 한계에
+  부딪히거나 퍼지 매칭을 넣을 때 다시 반입하면 된다.
 
 ---
 
@@ -318,9 +321,10 @@ llama.cpp ↔ vLLM을 코드 변경 없이 스왑할 수 있다.
 
 ### Phase 3(모델 서빙 스택) — 아직 미도입
 
-`requirements-serve.txt`(torch/transformers/vllm)는 **잠정 상태**다.
-O-06(폐쇄망 서버 OS/CUDA 버전)이 확정돼야 torch wheel(cu121/cu124/cu128
-등)을 고를 수 있어, `requirements.lock.txt`에도 포함돼 있지 않다. L40S는
+서빙 스택(torch/transformers/vllm)은 **잠정 상태**라 어느 requirements
+파일에도 없고 `requirements.txt` 하단 주석에만 있다(D-25). O-06(폐쇄망 서버
+OS/CUDA 버전)이 확정돼야 torch wheel(cu121/cu124/cu128 등)을 고를 수 있어
+`requirements.lock.txt`에도 포함돼 있지 않다. L40S는
 NVLink가 없어 텐서 병렬(TP=2) 대신 "48GB 독립 슬롯 두 개"로 설계할
 방침이며, FP8 네이티브 지원(Ada Lovelace)으로 양자화 손실을 줄인다(§3.1,
 §8.2).
@@ -591,9 +595,11 @@ TM, 프롬프트, 검증, 모델 서빙, 평가 설계)에 집중한다.
 ## 15. 오프라인 배치 도구 — `tools/` (전부 Phase 1/5 미구현 스텁)
 
 `tools/`는 **개발망 전용**이며 폐쇄망에 반입하지 않는다
-([tools/README.md](../tools/README.md)). `requirements-tools.txt`
-(pandas, openpyxl, sentence-transformers, sacrebleu, unbabel-comet)에
-의존하는데, 이 중 `sentence-transformers`는 모델을 인터넷에서 내려받으므로
+([tools/README.md](../tools/README.md)). 현재 살아 있는 스크립트는
+`openpyxl`만 쓰며 [requirements-dev.txt](../requirements-dev.txt)에 들어
+있다. 나머지(pandas, sentence-transformers, sacrebleu, unbabel-comet)는
+해당 스크립트가 미구현이라 **주석 처리**돼 있다(D-25). 이 중
+`sentence-transformers`는 모델을 인터넷에서 내려받으므로
 **`app/` 런타임 코드에서는 절대 import하면 안 된다**(§9.3).
 
 | 스크립트 | 목적 | 상태 |
@@ -638,7 +644,7 @@ TM, 프롬프트, 검증, 모델 서빙, 평가 설계)에 집중한다.
 | O-03 | 확보 용어집 규모 | Phase 1 일정 |
 | O-04 | 동시 접속자/일일 요청 수 | 워커 수, 세마포어 상한 조정 |
 | O-05 | 폐쇄망 반입 절차·주기 | Phase 5, 핫리로드 기능 필수 여부 |
-| O-06 | 폐쇄망 GPU 서버 OS/CUDA | `requirements-serve.txt` 최종 잠금 |
+| O-06 | 폐쇄망 GPU 서버 OS/CUDA | 서빙 스택(torch/vLLM) 버전 최종 잠금 |
 | O-07 | 인증 방식 | `/admin/reload` 활성화 여부 |
 | O-08 | TTS/STT 실제 구현 여부 | 범위 확정 |
 | O-09 | 모델 원산지 조달 규정 | Qwen3(중국계) 후보 유지 여부 |
@@ -1330,7 +1336,7 @@ vs `proper`(계획서 용어로는 "용어집 없음" vs "용어집 적용")의 
 | 용어 일관성 | 같은 용어가 문서 내 동일하게 번역되는 비율 | 완전 자동 | Phase 3 (`term_consistency`, 스텁) |
 | 약어 처리 정확도 | 첫 등장 full form + 이후 약어 규칙 준수율 | 완전 자동 | Phase 3 (`abbr_accuracy`, 스텁) |
 | chrF | 문자 n-gram F-score | 자동(골든셋 필요) | Phase 3 미착수 |
-| COMET | 신경망 기반 품질 추정 | 자동(모델 반입 필요, 선택) | Phase 3 미착수, `unbabel-comet`(requirements-tools) |
+| COMET | 신경망 기반 품질 추정 | 자동(모델 반입 필요, 선택) | Phase 3 미착수, `unbabel-comet` 미도입 |
 
 **용어 준수율이 1순위 지표**인 이유가 명확히 서술돼 있다 — "용어집
 기반이라 자동 측정이 가능하고, 이 도메인의 핵심 요구사항과 직결된다."
@@ -1346,8 +1352,8 @@ vs `proper`(계획서 용어로는 "용어집 없음" vs "용어집 적용")의 
 **아직 없는 부분**: `term_consistency`, `abbr_accuracy`,
 `build_report()`(`app/eval/report.py`)는 전부 `NotImplementedError`를
 던지는 스텁이며, chrF/COMET을 계산할 라이브러리(`sacrebreu`,
-`unbabel-comet`)는 `requirements-tools.txt`에 반입돼 있지만 아직
-어떤 코드도 이를 import하지 않는다.
+`unbabel-comet`)는 아직 어떤 코드도 import하지 않아
+[requirements-dev.txt](../requirements-dev.txt)에 주석으로만 있다(D-25).
 
 ### 22.4 회귀 테스트 실행 형태 (계획, §12.3)
 

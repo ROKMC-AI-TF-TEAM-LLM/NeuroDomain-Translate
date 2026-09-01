@@ -1,0 +1,65 @@
+# 폐쇄망 런타임 — 계획서 §10
+#
+# **반입 대상이다.** 이 파일에 없는 것은 폐쇄망에 들어가지 않는다.
+# 개발 전용 도구는 requirements-dev.txt 에 있다.
+#
+# 버전 정책 (D-20): mars-ai-server/requirements.txt 와 겹치는 항목은
+# 그쪽 버전을 정본으로 삼는다. fastapi / uvicorn / pydantic 은 양쪽이 동일하다.
+#
+# DB 드라이버 없음 (D-19). SQLite 는 표준 라이브러리 sqlite3 를 쓴다.
+# ORM 도 쓰지 않는다. SQLAlchemy / psycopg / asyncpg 를 추가하지 말 것.
+
+# ── 웹 · 설정 ─────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# 프롬프트 템플릿(§7)과 문체 프리셋(§7.3)
+jinja2==3.1.6
+pyyaml==6.0.3
+
+# 모델 서버 호출 (§4.3). 폐쇄망 내부 주소로만 나간다 (§9.3)
+httpx==0.28.1
+
+# ── 용어 매칭 · 형태소 (§6.2, §6.3) ───────────────────────────
+#
+# 없어도 서버는 뜬다. pyahocorasick 이 빠지면 용어 주입 없이 번역만 되고,
+# kiwipiepy 가 빠지면 문장 분할이 규칙 기반으로 떨어진다. /health 의
+# `matcher` 와 `segmenter` 필드로 어느 쪽으로 도는지 확인할 수 있다.
+pyahocorasick==2.1.0
+kiwipiepy==0.22.2
+
+# ★ kiwipiepy 의 모델은 별도 패키지다. 누락하면 최초 실행 시 내려받으려 시도해
+#   폐쇄망 기동이 실패한다 (§9.3). mars-ai-server 에는 이 줄이 없으므로
+#   그대로 베끼지 말 것.
+#
+# ★★ PyPI 에 wheel 이 없고 sdist 만 있다. §10.6 의
+#     `pip download --only-binary=:all:` 이 여기서 실패한다. 반입 번들용
+#     wheel 은 개발망에서 직접 만든다 (D-21):
+#         pip wheel kiwipiepy_model==0.22.1 -w bundle/kiwi/ --no-deps
+#     순수 데이터 패키지라 결과가 py3-none-any 이고 플랫폼을 안 탄다.
+#     자세한 내용은 docs/phase0-notes.md §2-a.
+kiwipiepy-model==0.22.1
+
+# TM few-shot 검색 (§6.4)
+rank-bm25==0.2.2
+
+# ── 모델 서버는 여기에 넣지 않는다 ────────────────────────────
+#
+# 번역기 앱은 torch 를 import 하지 않는다. vLLM 은 HTTP 로 부르는 **별도
+# 서비스**이며, DB 를 requirements 에 적지 않는 것과 같은 이유로 뺐다.
+# 여기 넣으면 앱 서버가 쓰지도 않는 수 GB 를 받는다.
+#
+# GPU 서버에 따로 설치한다. **O-06(폐쇄망 OS / CUDA 버전) 확정 전까지
+# torch 휠(cu121 / cu124 / cu128 …)을 고를 수 없어 잠금하지 못한다.**
+#
+#   torch==2.8.0            # ← D-20: mars-ai-server 기준
+#   transformers==4.57.1    # ← D-20
+#   vllm==0.11.0            # ← D-20
+#   accelerate==1.14.0
+#   safetensors==0.8.0
+#
+# mars-ai-server 가 함께 고정한 전이 의존성(tokenizers 0.22.1, triton 3.5.0,
+# torchvision, torchaudio)은 계획서 §10 에 없어 임의로 추가하지 않았다.
+# Phase 3 에서 실제 해석 결과를 보고 정할 것.

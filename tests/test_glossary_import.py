@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-openpyxl = pytest.importorskip("openpyxl", reason="requirements-tools.txt 미설치")
+openpyxl = pytest.importorskip("openpyxl", reason="requirements-dev.txt 미설치")
 
 from app.glossary.loader import load_glossary, load_meta  # noqa: E402
 from tools.glossary_import import (  # noqa: E402

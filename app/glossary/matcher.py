@@ -373,7 +373,7 @@ class GlossaryAutomaton:
 
     빌드는 기동 시 1회다 (§6.7). 요청마다 만들면 안 된다.
 
-    `pyahocorasick` 은 requirements-nlp.txt 에 있다. 없으면 생성 시점에
+    `pyahocorasick` 은 requirements.txt 에 있다. 없으면 생성 시점에
     예외를 내고, 레지스트리가 받아 매칭 없이 동작한다 — 번역은 되고 용어
     주입만 빠진다.
     """
@@ -383,7 +383,7 @@ class GlossaryAutomaton:
             import ahocorasick
         except ImportError as e:  # pragma: no cover - 설치 환경에 따름
             raise AutomatonUnavailableError(
-                "pyahocorasick 이 설치되어 있지 않다. requirements-nlp.txt 를 볼 것"
+                "pyahocorasick 이 설치되어 있지 않다. requirements.txt 를 볼 것"
             ) from e
 
         self.direction = direction

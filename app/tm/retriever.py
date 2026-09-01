@@ -68,7 +68,7 @@ class BM25Retriever:
             from rank_bm25 import BM25Okapi
         except ImportError as e:  # pragma: no cover - 설치 환경에 따름
             raise RetrieverUnavailableError(
-                "rank-bm25 가 설치되어 있지 않다. requirements-nlp.txt 를 볼 것"
+                "rank-bm25 가 설치되어 있지 않다. requirements.txt 를 볼 것"
             ) from e
 
         self.direction = direction

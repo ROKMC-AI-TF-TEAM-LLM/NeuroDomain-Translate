@@ -59,7 +59,7 @@ Python 3.11 (반입 번들과 같은 버전이어야 한다). Windows / Linux �
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-pip install -r requirements-core.txt -r requirements-nlp.txt -r requirements-dev.txt
+pip install -r requirements-dev.txt
 copy .env.example .env
 ```
 
@@ -69,15 +69,16 @@ copy .env.example .env
 python -m venv .venv
 source .venv/bin/activate
 
-pip install -r requirements-core.txt -r requirements-nlp.txt -r requirements-dev.txt
+pip install -r requirements-dev.txt
 cp .env.example .env
 ```
 
-`requirements-nlp.txt` 설치에는 시간이 걸린다. `kiwipiepy-model` 이 79MB 이고
-PyPI 에 wheel 이 없어 sdist 를 빌드한다 (D-21). 이것 없이 코어만 깔아도
-서비스는 돌지만 문장 분할이 규칙 기반으로 떨어진다.
+설치에는 시간이 걸린다. `kiwipiepy-model` 이 79MB 이고 PyPI 에 wheel 이 없어
+sdist 를 빌드한다 (D-21). 이것과 `pyahocorasick` 없이도 서비스는 돌지만
+문장 분할이 규칙 기반으로 떨어지고 용어 주입이 빠진다 — `/health` 의
+`segmenter` · `matcher` 필드로 확인할 수 있다.
 
-`requirements-serve.txt`(torch / vLLM)는 Phase 3 에서 L40S 서버에만 깐다.
+서빙 스택(torch / vLLM)은 requirements 에 없다. Phase 3 에서 L40S 서버에만 깐다.
 개발 환경에서는 llama.cpp 를 쓴다 — vLLM 은 KV 캐시를 미리 크게 잡아 6GB 카드에
 맞지 않는다 (§8.2).
 

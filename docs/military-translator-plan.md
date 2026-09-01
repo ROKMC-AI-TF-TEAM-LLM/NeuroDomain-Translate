@@ -1093,101 +1093,124 @@ systemctl restart translator-api
 > `requirements.lock.txt`를 생성한 뒤, **그 lock 파일이 정본**이 됩니다.
 > 임의로 버전을 올리거나 내리지 마십시오. 번들과 1:1 대응합니다.
 
-### 10.1 런타임 — 코어 (GPU 불필요)
+> **파일 구성 변경 (D-25, 2026-09-01)**: 원안은 목적별로 5개 파일을 두었으나
+> **2개로 합쳤습니다.** 판단 기준을 "무엇에 쓰는가"에서 **"폐쇄망에 반입하는가"**로
+> 바꾼 결과입니다 — 파일이 여러 개여도 반입 결정이 갈리는 지점은 그 하나뿐이고,
+> 나머지 구분은 주석으로 충분합니다. 실제로 쓰이지 않는 패키지도 함께 걷어냈습니다.
+>
+> | 파일 | 용도 | 반입 |
+> |---|---|---|
+> | `requirements.txt` | 폐쇄망 런타임 | ✅ |
+> | `requirements-dev.txt` | 개발 전용 (`-r requirements.txt` 포함) | ✗ |
+
+### 10.1 런타임 — `requirements.txt` (반입 대상)
 
 ```
-# requirements-core.txt
+# 웹 · 설정
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
 pydantic-settings==2.7.0
-jinja2==3.1.5
+
+# 프롬프트 템플릿(§7) · 문체 프리셋(§7.3)
+jinja2==3.1.6
+pyyaml==6.0.3
+
+# 모델 서버 호출 (§4.3). 폐쇄망 내부 주소로만
 httpx==0.28.1
-python-multipart==0.0.20
-orjson==3.10.13
-structlog==24.4.0
-tenacity==9.0.0
+
+# 용어 매칭 · 형태소 (§6.2, §6.3)
+pyahocorasick==2.1.0
+kiwipiepy==0.22.2
+kiwipiepy-model==0.22.1         # ★ 별도 패키지. 누락 시 런타임 다운로드 시도
+
+# TM few-shot 검색 (§6.4)
+rank-bm25==0.2.2
 ```
 
 > **DB 드라이버 없음** (D-19). SQLite는 Python 표준 라이브러리 `sqlite3`를 씁니다.
 > ORM도 쓰지 않습니다 — 테이블이 2개뿐이고 쿼리가 단순해서 `sqlite3` 직접 사용이 낫습니다.
 > **LLM 에이전트는 SQLAlchemy, psycopg, asyncpg 등을 추가하지 마십시오.**
 
-### 10.2 런타임 — NLP
+> **`kss` 제외** (D-22): 의존성 34개에 sdist-only 3개가 섞여 있어 반입 비용이
+> 컸습니다. `Kiwi.split_into_sents()`로 대체했고, 용어집 사용자 사전이 문장
+> 분할에도 적용되는 이득까지 얻었습니다. `docs/phase0-notes.md §2-b`.
+
+> **버전 정책** (D-20): `mars-ai-server/requirements.txt`와 겹치는 항목은
+> 그쪽 버전을 정본으로 삼습니다. 반입 번들을 공유하기 위해서입니다.
+
+> **넣지 않은 것**: 원안의 `python-multipart`, `orjson`, `structlog`,
+> `tenacity`, `rapidfuzz`, `regex`는 코드베이스 어디서도 import하지 않아
+> 뺐습니다. 파일 업로드(`python-multipart`)나 유사도 매칭(`rapidfuzz`)이
+> 실제로 필요해지면 그때 다시 넣으십시오.
+
+### 10.2 개발 환경 — `requirements-dev.txt` (반입 제외)
 
 ```
-# requirements-nlp.txt
-pyahocorasick==2.1.0
-kiwipiepy==0.20.4
-kiwipiepy-model==0.20.0         # ★ 별도 패키지. 누락 시 런타임 다운로드 시도
-kss==6.0.4
-rapidfuzz==3.11.0
-rank-bm25==0.2.2
-regex==2024.11.6
+-r requirements.txt
+
+pytest==8.3.4
+pytest-asyncio==0.25.0
+ruff==0.8.6
+mypy==1.14.1
+openpyxl==3.1.5                 # 엑셀 용어집 (O-02 확정)
 ```
 
-> **주의**: `kiwipiepy`는 모델 파일이 별도 패키지입니다. 번들에 반드시 포함하십시오.
-> `kss`는 백엔드로 다른 형태소 분석기를 요구할 수 있으므로 Phase 0에서 의존성 트리를 확인하십시오.
+개발자는 이 파일 하나만 설치하면 됩니다. 런타임까지 함께 깔립니다.
+
+Phase 1·3 도구 의존성(`pandas`, `sentence-transformers`, `sacrebleu`,
+`unbabel-comet`)은 해당 스크립트가 전부 미구현이라 **주석으로만** 남겼습니다.
+구현할 때 주석을 푸십시오.
+
+> ⚠ `sentence-transformers`는 런타임에 모델을 내려받습니다. 개발망 전용이므로
+> 허용되지만 **`app/` 아래에서는 절대 import하지 마십시오** (§9.3).
 
 ### 10.3 서빙 (GPU, 폐쇄망 서버)
 
+**requirements 파일에 넣지 않습니다.** 번역기 앱은 `torch`를 import하지 않고,
+vLLM은 HTTP로 부르는 **별도 서비스**입니다 — DB를 requirements에 적지 않는 것과
+같은 이유입니다. 여기 넣으면 앱 서버가 쓰지도 않는 수 GB를 받습니다.
+
+GPU 서버에 따로 설치합니다. `requirements.txt` 하단에 주석으로 기록해 두었습니다.
+
 ```
-# requirements-serve.txt
-torch==2.5.1                    # O-06: CUDA 버전에 맞는 휠 필요
-transformers==4.48.0            # A.X 4.0 Light는 >=4.46.0 요구
-vllm==0.7.2                     # O-06 확정 후 조정
-accelerate==1.2.1
-safetensors==0.4.5
+torch==2.8.0                    # D-20: mars-ai-server 기준
+transformers==4.57.1            # D-20
+vllm==0.11.0                    # D-20
+accelerate==1.14.0
+safetensors==0.8.0
 ```
 
 > **O-06 미결**: 폐쇄망 서버의 CUDA 버전에 따라 `torch` 휠이 달라집니다
-> (cu121 / cu124 등). 확인 전까지 이 파일은 잠정입니다.
+> (cu121 / cu124 / cu128 …). 확인 전까지 잠금하지 못합니다.
 
-### 10.4 개발 환경 전용 (반입 제외)
-
-```
-# requirements-dev.txt
-pytest==8.3.4
-pytest-asyncio==0.25.0
-pytest-cov==6.0.0
-ruff==0.8.6
-mypy==1.14.1
-ipython==8.31.0
-```
-
-### 10.5 오프라인 도구 (Phase 1, 개발망에서만 실행)
-
-```
-# requirements-tools.txt
-pandas==2.2.3
-openpyxl==3.1.5                 # 엑셀 용어집 파싱 (O-02 확정 후)
-sentence-transformers==3.3.1    # 문장 정렬용. 개발망 전용
-sacrebleu==2.4.3
-unbabel-comet==2.2.4            # 선택. 평가 지표 보조
-```
-
-**이 파일의 패키지는 폐쇄망에 반입하지 않습니다.** 용어집·TM 구축은 개발망에서 끝내고 결과물(SQL 덤프)만 반입합니다.
-
-### 10.6 번들 생성 명령
+### 10.4 번들 생성 명령
 
 ```bash
-# 플랫폼을 폐쇄망 서버와 일치시켜야 함 (O-06)
-pip download \
-  -r requirements-core.txt \
-  -r requirements-nlp.txt \
-  -r requirements-serve.txt \
+# ① kiwipiepy_model 을 먼저 만든다 (D-21).
+#    PyPI 에 sdist 만 있어서 --only-binary=:all: 이 이 줄에서 멈춘다.
+#    순수 데이터 패키지라 결과가 py3-none-any 이고 플랫폼을 안 탄다.
+pip wheel kiwipiepy_model==0.22.1 -w bundle/wheels/ --no-deps
+
+# ② 나머지를 받는다. 플랫폼을 폐쇄망 서버와 일치시켜야 함 (O-06)
+pip download -r requirements.txt \
   --platform manylinux2014_x86_64 \
   --python-version 3.11 \
   --only-binary=:all: \
+  --find-links bundle/wheels/ \
   -d bundle/wheels/
 
-pip freeze > bundle/wheels/requirements.lock.txt
 sha256sum bundle/wheels/*.whl > bundle/wheels/SHA256SUMS
 ```
 
+해석 결과는 `requirements.lock.txt`에 있습니다. **그 lock 파일이 정본**이며
+번들과 1:1 대응합니다. 재생성은 반드시 **폐쇄망과 같은 OS(Linux)**에서
+하십시오 — Windows에서 만들면 환경 마커가 현재 인터프리터 기준으로 평가돼
+`uvloop`이 빠집니다.
+
 ```bash
 # 폐쇄망 설치
-pip install --no-index --find-links=./wheels -r wheels/requirements.lock.txt
+pip install --no-index --find-links=./wheels -r requirements.lock.txt
 ```
 
 ---
