@@ -1044,7 +1044,14 @@ def test_pipeline_runs_offline():
     ...
 ```
 
-**이 테스트를 CI에 넣으십시오.** 새 의존성이 몰래 네트워크를 쓰면 여기서 걸립니다.
+**반입 번들을 만들기 전에 반드시 실행하십시오.** 새 의존성이 몰래 네트워크를 쓰면 여기서 걸립니다.
+
+```bash
+pytest tests/test_offline.py -v
+```
+
+> CI 자동화는 도입하지 않았습니다(2026-08-23 결정). 따라서 이 검사는 **사람이 실행해야 하는 절차**입니다.
+> 자동으로 걸러주지 않으므로 §9.2 반입 번들 생성 절차의 첫 단계에 넣고, 통과하지 못하면 번들을 만들지 마십시오.
 
 ### 9.6 번들 갱신 주기 (O-05 미결)
 
@@ -1193,7 +1200,7 @@ pip install --no-index --find-links=./wheels -r wheels/requirements.lock.txt
 |---|---|
 | 목표 | 프론트-백엔드 연결 확인, 오프라인 검증 체계 확립 |
 | 선행 | 없음 |
-| 산출물 | 동작하는 `/translate` (mock 백엔드), `requirements.lock.txt`, CI |
+| 산출물 | 동작하는 `/translate` (mock 백엔드), `requirements.lock.txt`, `tests/test_offline.py` |
 
 **작업**
 
@@ -1204,7 +1211,7 @@ pip install --no-index --find-links=./wheels -r wheels/requirements.lock.txt
 5. 샘플 `data/glossary.jsonl` 20개로 로더 동작 확인
 6. 프론트 연동 확인
 7. `pip download`로 실제 버전 해석 → `requirements.lock.txt` 생성 → **§10 갱신**
-8. `tests/test_offline.py` 작성 및 CI 등록
+8. `tests/test_offline.py` 작성 — §9.3 금지 패턴 정적 검사 포함. 반입 전 필수 실행
 
 **완료 기준**
 - [ ] 프론트에서 텍스트 입력 시 mock 응답이 화면에 표시됨
@@ -1235,7 +1242,7 @@ pip install --no-index --find-links=./wheels -r wheels/requirements.lock.txt
    - 표층형 중복 탐지 (서로 다른 `id`가 같은 `ko`를 가리키는 경우)
    - 대역 충돌 탐지 (같은 `ko`에 다른 `en`)
    - `source`/`confidence` 누락 탐지
-   - **CI에 등록해 매 커밋마다 실행**
+   - **용어집을 갱신할 때마다 실행.** `glossary.jsonl`을 커밋하기 전에 통과해야 합니다
 
 2. **AI Hub 데이터 신청 및 수령** (O-17 활용)
    - 국방 데이터: 군 담당자 경유 신청
@@ -1435,7 +1442,7 @@ CUDA_VISIBLE_DEVICES=1 vllm serve /models/qwen3-30b-a3b \
 **용어 준수율이 1순위입니다.** 용어집 기반이라 자동 측정이 가능하고, 이 도메인의 핵심 요구사항과 직결됩니다.
 
 일반 번역 품질 지표(chrF/COMET)는 보조입니다. WMT25 기준으로도 주 평가는 **일반 품질 × 용어 성공률** 조합입니다.
-
+지금
 ### 12.2 평가 모드
 
 WMT25 방식을 따라 세 모드로 측정하면 용어집 효과를 인과적으로 분리할 수 있습니다.
@@ -1467,7 +1474,7 @@ python -m app.eval.runner \
 | # | 리스크 | 영향 | 대응 |
 |---|---|---|---|
 | R-01 | 용어집 검수 인력 미확보 (O-01) | Phase 1 정체 → 전체 지연 | 자동 추출 신뢰도 임계값을 높이고 고빈도 항목만 우선 반영 |
-| R-02 | 에어갭 위반 코드가 늦게 발견 | Phase 5에서 대규모 수정 | §9.5 오프라인 테스트를 Phase 0부터 CI에 강제 |
+| R-02 | 에어갭 위반 코드가 늦게 발견 | Phase 5에서 대규모 수정 | §9.5 오프라인 테스트 + §9.3 금지 패턴 정적 검사. **CI 미도입이라 사람이 실행해야 한다** — 번들 생성 절차의 첫 단계로 못박을 것 |
 | R-03 | 개발 환경(6GB)과 운영 환경 격차 | 평가 결과 재현 불가 | 품질 평가는 반드시 L40S에서. 4050은 로직 검증만 |
 | R-04 | 모델의 약어 환각 | 오역이 자연스러워 검수자가 놓침 | "DO NOT invent acronyms" 지시 + 미등록 후보 탐지 + `warnings` 노출 |
 | R-05 | 다의어 오판정 (군종별 계급 등) | 확신을 갖고 틀린 번역 생성 | 코드가 확정하지 않고 후보를 모델에 넘김. 규칙 우선, LLM 폴백 |
@@ -1476,7 +1483,7 @@ python -m app.eval.runner \
 | R-08 | 재호출 누적으로 큐 포화 | 다중 접속 시 응답 지연 | 재호출 1회 상한, 2차 실패는 경고로 전환 |
 | R-09 | 5,000자 입력 시 청크 경계 문제 | 문장 중복/누락 | 결합 단계 점검 로직 + 골든셋에 장문 케이스 포함 |
 | R-10 | 모델 원산지 조달 규정 (O-09) | Qwen3 배제 시 후보 축소 | Gemma 4, A.X 4.0으로 대체 가능하도록 후보 유지 |
-| R-11 | 사람이 편집한 `glossary.jsonl` 문법 오류 | 앱 기동 실패 | 로더가 줄 번호와 함께 오류 보고 + `glossary_lint.py`를 CI에 강제 |
+| R-11 | 사람이 편집한 `glossary.jsonl` 문법 오류 | 앱 기동 실패 | 로더가 줄 번호와 함께 오류 보고 + `glossary_import.py`가 시트·행 번호로 거부. 커밋 전 `glossary_lint.py` 실행 |
 | R-12 | SQLite 다중 워커 동시 쓰기 경합 | 로그 유실 또는 `database is locked` | WAL 모드 + `busy_timeout`. 워커 수는 O-04 확정 후 결정. 최악의 경우 워커별 DB 분리 |
 | R-13 | 번역 로그 무한 누적 | 디스크 포화 | 보존 기간(기본 180일) 정리 작업을 운영 절차에 포함 (§5.4) |
 

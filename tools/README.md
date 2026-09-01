@@ -12,7 +12,7 @@
 | `glossary_schema.py` | — | ✅ 엑셀 열 정의. 양식과 파서가 공유 |
 | `glossary_template.py` | Phase 1 | ✅ 엑셀 양식 생성 |
 | `glossary_import.py` | Phase 1 | ✅ 엑셀 → glossary.jsonl |
-| `glossary_lint.py` | Phase 1 | 미구현 — CI 등록 대상 |
+| `glossary_lint.py` | Phase 1 | 미구현 — 용어집 커밋 전 실행할 도구 |
 | `corpus_align.py` | Phase 1 | 미구현 |
 | `term_extract.py` | Phase 1 | 미구현 |
 | `tm_build.py` | Phase 1 | 미구현 |
@@ -76,7 +76,7 @@ pytest tests/test_glossary_schema.py
 ## Phase 0 시점의 대체 수단
 
 `glossary_lint.py` 가 담당할 검사 중 다음은 이미 `tests/test_glossary_schema.py`
-가 CI 에서 강제하고 있다.
+가 이미 덮고 있다 (`pytest tests/test_glossary_schema.py`).
 
 - 스키마 필수 필드 확인
 - `source` / `confidence` 누락 탐지

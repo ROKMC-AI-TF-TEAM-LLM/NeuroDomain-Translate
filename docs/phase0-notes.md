@@ -254,7 +254,7 @@ Phase 3 에서 골든셋으로 `noterm` / `proper` 를 비교할 때 이 사례�
 | `pyproject.toml` | pytest / ruff / mypy 설정. 의존성은 여기 적지 않았다 |
 | `requirements.lock.txt` | §10.6 산출물 |
 | `.env.example` / `.env` | 설정 예시와 로컬 설정. `.env` 는 git 제외 |
-| `.github/workflows/ci.yml` | §9.5 를 CI 에 강제 (R-02) |
+| ~~`.github/workflows/ci.yml`~~ | §9.5 자동 강제용이었으나 2026-08-23 제거. 수동 실행으로 전환 |
 | `tools/README.md` | 각 도구의 단계와 선행 조건 |
 | `docs/phase0-notes.md` | 이 문서 |
 

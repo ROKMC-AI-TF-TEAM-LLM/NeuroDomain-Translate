@@ -33,7 +33,7 @@ TM 검색      rank-bm25 0.2.2 (BM25Okapi)
 모델 서빙(개발) llama.cpp (외부 프로세스, 파이썬 의존성 아님)
 테스트       pytest 8.3.4 + pytest-asyncio 0.25.0 + pytest-cov 6.0.0
 린트/포맷    ruff 0.8.6 (lint + format 겸용) + mypy 1.14.1
-CI          GitHub Actions (3-잡: core / nlp / glossary)
+CI          없음 (2026-08-23 제거). 검사는 로컬에서 사람이 실행
 오프라인 도구  pandas, openpyxl, sentence-transformers, sacrebleu, unbabel-comet (개발망 전용, 미구현)
 ```
 
@@ -75,15 +75,13 @@ CI          GitHub Actions (3-잡: core / nlp / glossary)
 
 ## 3. 언어 / 런타임
 
-- **Python 3.11** 고정. `pyproject.toml`의 `requires-python = ">=3.11"`,
-  CI의 `actions/setup-python@v5`가 `"3.11"`. 반입 번들과 버전이 어긋나면
-  wheel이 안 맞을 수 있어 엄격히 고정한다.
+- **Python 3.11** 고정. `pyproject.toml`의 `requires-python = ">=3.11"`.
+  반입 번들과 버전이 어긋나면 wheel이 안 맞을 수 있어 엄격히 고정한다.
 - **Windows / Linux** 겸용 개발. 단, **번들(wheel) 생성은 반드시 폐쇄망과
   같은 OS(Linux)에서** 해야 한다 — Windows에서 만들면 `uvloop`처럼
   `sys_platform` 환경 마커가 붙은 조건부 의존성이 조용히 누락된다
   (`docs/phase0-notes.md` §3 실측).
-- `PYTHONDONTWRITEBYTECODE=1` 등 에어갭 관련 환경변수를 CI와 운영 양쪽에서
-  강제한다(§9.4).
+- `PYTHONDONTWRITEBYTECODE=1` 등 에어갭 관련 환경변수를 운영에서 강제한다(§9.4).
 
 ---
 
@@ -535,14 +533,15 @@ Kiwi 인스턴스가 스레드 안전하지 않아 풀(`AnalyzerPool`, Queue 기
 자동 다운로드 코드는 개발망에서는 정상 동작하고 폐쇄망에서만 터지므로
 발견이 늦다 — 그래서 Phase 0부터 강제한다.
 
-### 금지 패턴 (정적 검사로 CI에서 강제)
+### 금지 패턴 (정적 검사)
 
 `.from_pretrained()`, `snapshot_download()`, `SentenceTransformer()`,
 `nltk.download()`, `tiktoken.get_encoding()`, `spacy.load()`,
 `requests.get/post/put/delete()`, `urllib.request.urlopen()`,
 런타임 `pip install` — 전부 [tests/test_offline.py](../tests/test_offline.py)의
 `FORBIDDEN_PATTERNS`가 `app/` 트리 전체를 정적 스캔(주석·문자열 리터럴은
-제외하고 실제 호출만)하며 매 커밋 CI에서 검증한다.
+제외하고 실제 호출만)한다. **CI가 없으므로 사람이 실행해야 한다** — 반입 번들을
+만들기 전 `pytest tests/test_offline.py`가 통과해야 한다 (R-02).
 
 ### 런타임 네트워크 가드
 
@@ -557,7 +556,7 @@ Kiwi 인스턴스가 스레드 안전하지 않아 풀(`AnalyzerPool`, Queue 기
 ### 환경변수 강제
 
 `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, `HF_DATASETS_OFFLINE=1`을
-CI와 운영 양쪽에 설정([.github/workflows/ci.yml](../.github/workflows/ci.yml)).
+운영 환경과 오프라인 검증 실행 시 설정한다.
 
 ### 반입 번들 구성 (계획 — `tools/bundle_build.py`는 Phase 5까지 미구현)
 
@@ -581,8 +580,9 @@ DB를 썼다면 덤프-전송-복원 절차가 필요했을 자리를 JSONL이 �
 
 번역 기술 자체와는 별개로, `ruff`(lint+format, 규칙셋 `E,F,W,I,UP,B,SIM,C4`)와
 `mypy`(현재 `disallow_untyped_defs=false`, Phase 2에서 조일 예정)로
-코드 품질을 관리하고, GitHub Actions가 core/nlp/glossary 3개 잡으로
-매 커밋 검증한다(`.github/workflows/ci.yml`). 테스트 스위트 자체의 구조는
+코드 품질을 관리한다. **CI는 두지 않았으므로**(2026-08-23) `ruff check`,
+`ruff format --check`, `pytest` 는 커밋 전에 사람이 실행한다.
+테스트 스위트 자체의 구조는
 이 문서의 범위에서 제외한다 — 아래 절부터는 **번역 기술**(용어 매칭,
 TM, 프롬프트, 검증, 모델 서빙, 평가 설계)에 집중한다.
 
@@ -599,7 +599,7 @@ TM, 프롬프트, 검증, 모델 서빙, 평가 설계)에 집중한다.
 | 스크립트 | 목적 | 상태 |
 |---|---|---|
 | [glossary_import.py](../tools/glossary_import.py) | 확보 용어집(엑셀/HWP/PDF 등) → JSONL 파싱 | 미구현, **O-02 확정 필요** |
-| [glossary_lint.py](../tools/glossary_lint.py) | 스키마·중복·대역충돌 검증, CI 등록 대상 | 미구현 (일부는 `test_glossary_schema.py`가 대체 중) |
+| [glossary_lint.py](../tools/glossary_lint.py) | 스키마·중복·대역충돌 검증. 용어집 커밋 전 실행 | 미구현 (일부는 `test_glossary_schema.py`가 대체 중) |
 | [corpus_align.py](../tools/corpus_align.py) | LaBSE 임베딩 + DP로 병렬 코퍼스 문장 정렬 | 미구현 |
 | [term_extract.py](../tools/term_extract.py) | 통계(로그우도비+Dice) + LLM 기반 용어 후보 추출 | 미구현 |
 | [tm_build.py](../tools/tm_build.py) | 정렬 결과 → `tm.jsonl` | 미구현 |
@@ -616,7 +616,7 @@ TM, 프롬프트, 검증, 모델 서빙, 평가 설계)에 집중한다.
 
 | 단계 | 내용 | 상태 |
 |---|---|---|
-| Phase 0 | 골격, mock 백엔드, SQLite, 오프라인 CI | ✅ 완료 |
+| Phase 0 | 골격, mock 백엔드, SQLite, 오프라인 검증 | ✅ 완료 |
 | Phase 1 | 용어집 구축 (500건+) | ⛔ O-01·O-02·O-03 확정 필요, 미착수 |
 | Phase 2 | 매칭 엔진 (Aho-Corasick + Kiwi) | ✅ 완료 |
 | Phase 3 | 모델 평가 (L40S) | ⛔ O-06 확정 필요, 미착수 |
