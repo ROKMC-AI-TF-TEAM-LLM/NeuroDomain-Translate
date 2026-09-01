@@ -12,15 +12,27 @@ fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
 pydantic-settings==2.7.0
-jinja2==3.1.5
+jinja2==3.1.6
 httpx==0.28.1
 python-multipart==0.0.20
-orjson==3.10.13
+orjson==3.11.9
 structlog==24.4.0
-tenacity==9.0.0
+tenacity==9.1.4
 
 # 문체 프리셋(§4.2, §7.3)이 .yaml 이라 파서가 필요하다. 계획서 §10 에 없던
 # 항목이며 2026-08-19 사람 승인으로 추가했다 (D-23).
 # uvicorn[standard] 의 전이 의존성이라 반입 번들이 커지지는 않지만,
 # 번들과 1:1 대응을 위해 명시적으로 고정한다.
 pyyaml==6.0.3
+
+# ── 2026-09-01: 반입 번들 공유를 위해 MARS 해석 버전으로 정렬 (D-20) ──────
+# mars-ai-server와 폐쇄망 반입 번들을 함께 쓰기로 했다. 겹치는 라이브러리를
+# 두 버전씩 들고 가지 않기 위해 MARS 환경이 실제로 해석한 버전에 맞췄다.
+#   jinja2 3.1.5→3.1.6 / orjson 3.10.13→3.11.9 / tenacity 9.0.0→9.1.4
+#   regex 2024.11.6→2026.7.10
+# 적용 전 이 저장소 테스트 379개 통과를 확인했다.
+#
+# 맞추지 않은 것:
+#   pydantic-settings, python-multipart — mars-ai-server가 쓰지 않는 패키지라
+#     정본이 없다. 번들의 다른 버전은 Linux 쪽에만 딸려 들어온 것이다.
+#   accelerate, safetensors — requirements-serve.txt(GPU) 소관. O-06 확정 후 판단.

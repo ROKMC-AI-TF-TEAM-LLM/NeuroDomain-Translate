@@ -14,13 +14,24 @@
 torch==2.8.0
 transformers==4.57.1
 vllm==0.11.0
-accelerate==1.2.1
-safetensors==0.4.5
+accelerate==1.14.0
+safetensors==0.8.0
 
 # mars-ai-server 가 함께 고정한 전이 의존성이다. 위 3개와 한 묶음으로 움직인다.
 # 계획서 §10 에 없는 항목이라 임의로 추가하지 않았다. Phase 3 에서 실제
 # 해석 결과를 보고 lock 에 반영할지 결정할 것.
 #   tokenizers==0.22.1
-#   triton==3.5.0
+#   triton==3.4.0        ← 3.5.0은 설치 불가 (torch 2.8.0이 3.4.0 고정)
 #   torchvision==0.23.0
 #   torchaudio==2.8.0
+
+# ── 2026-09-01: 반입 번들 공유를 위해 MARS 해석 버전으로 정렬 (D-20) ──────
+# accelerate 1.2.1→1.14.0 / safetensors 0.4.5→0.8.0
+#
+# 근거: 이 파일의 스택(torch 2.8.0 + transformers 4.57.1 + vllm 0.11.0)은
+# mars-ai-server의 venv-llm과 사실상 같다. MARS 환경이 실제로 해석한 버전이
+# safetensors 0.8.0이고, accelerate는 venv-app이 1.14.0을 쓴다.
+# 정렬본으로 AlmaLinux 9에서 --no-index 설치와 import를 확인했다.
+#
+# ⚠️ 이 파일은 여전히 잠정이다 (O-06: 폐쇄망 CUDA 버전 미확정).
+#    torch 휠 변형(cu121/cu124/cu128)은 O-06 확정 후 정한다.
