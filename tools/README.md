@@ -1,18 +1,20 @@
 # tools/ — 오프라인 배치 도구
 
-**개발망에서만 실행한다.** 폐쇄망에 반입하지 않는다 (계획서 §10.5).
+**개발망에서만 실행한다.** 폐쇄망에 반입하지 않는다 (계획서 §10.2).
 
 용어집·TM 구축은 개발망에서 끝내고 결과물(JSONL)만 반입한다. 이 디렉터리의
-스크립트는 `requirements-tools.txt` 에 의존하며, 그중 `sentence-transformers`
-는 모델을 내려받는다 — `app/` 아래 런타임 코드에서는 절대 import 하지 말 것
-(§9.3).
+스크립트는 `requirements-dev.txt` 에 의존한다. 지금 살아 있는 것은 엑셀
+용어집 도구뿐이라 `openpyxl` 만 설치되며, 나머지(pandas,
+sentence-transformers 등)는 해당 스크립트를 구현할 때 주석을 푼다 (D-25).
+그중 `sentence-transformers` 는 모델을 내려받는다 — `app/` 아래 런타임
+코드에서는 절대 import 하지 말 것 (§9.3).
 
 | 스크립트 | 단계 | 상태 |
 |---|---|---|
 | `glossary_schema.py` | — | ✅ 엑셀 열 정의. 양식과 파서가 공유 |
 | `glossary_template.py` | Phase 1 | ✅ 엑셀 양식 생성 |
 | `glossary_import.py` | Phase 1 | ✅ 엑셀 → glossary.jsonl |
-| `glossary_lint.py` | Phase 1 | 미구현 — CI 등록 대상 |
+| `glossary_lint.py` | Phase 1 | 미구현 — 용어집 커밋 전 실행할 도구 |
 | `corpus_align.py` | Phase 1 | 미구현 |
 | `term_extract.py` | Phase 1 | 미구현 |
 | `tm_build.py` | Phase 1 | 미구현 |
@@ -76,7 +78,7 @@ pytest tests/test_glossary_schema.py
 ## Phase 0 시점의 대체 수단
 
 `glossary_lint.py` 가 담당할 검사 중 다음은 이미 `tests/test_glossary_schema.py`
-가 CI 에서 강제하고 있다.
+가 이미 덮고 있다 (`pytest tests/test_glossary_schema.py`).
 
 - 스키마 필수 필드 확인
 - `source` / `confidence` 누락 탐지

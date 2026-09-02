@@ -10,7 +10,7 @@ PyPI 에 wheel 이 없다. 반입 번들에는 개발망에서 만든 wheel 을 
 런타임에 모델을 내려받는 경로는 없다 — 패키지가 없으면 여기서 조용히
 규칙 기반으로 폴백하고 경고를 남긴다.
 
-import 를 모듈 최상단에 두지 않는 이유: `requirements-core.txt` 만 설치한
+import 를 모듈 최상단에 두지 않는 이유: 런타임 의존성만 설치한
 환경(CI, Phase 0)에서도 `app` 전체가 import 되어야 오프라인 테스트(§9.5)가 돈다.
 """
 
@@ -79,7 +79,7 @@ class KoreanAnalyzer:
             from kiwipiepy import Kiwi
         except ImportError as e:  # pragma: no cover - 설치 환경에 따름
             raise KiwiUnavailableError(
-                "kiwipiepy 가 설치되어 있지 않다. requirements-nlp.txt 를 볼 것"
+                "kiwipiepy 가 설치되어 있지 않다. requirements.txt 를 볼 것"
             ) from e
 
         # model_path 를 주지 않으면 kiwipiepy 가 kiwipiepy_model 패키지에서 찾는다.

@@ -32,7 +32,7 @@
 
 `mars-ai-server` 가 함께 고정한 전이 의존성(`tokenizers==0.22.1`,
 `triton==3.5.0`, `torchvision`, `torchaudio`)은 계획서 §10 에 없는 항목이라
-임의로 추가하지 않았다. `requirements-serve.txt` 에 주석으로만 남겼다.
+임의로 추가하지 않았다. `requirements.txt` 하단의 서빙 주석 블록에만 남겼다.
 
 ### 1-b. 신규 의존성 (D-23, 승인됨)
 
@@ -54,6 +54,7 @@ Phase 0 에서 확정된 것들이다. 계획서 §1 에 옮길 것.
 | D-22 | 문장 분할을 `kss` → `Kiwi.split_into_sents()` 로 교체 | kss 가 sdist 3개 포함 34개 의존성을 끌고 온다. Kiwi 는 이미 쓰며 용어집 사전을 공유한다 (§2-b) |
 | D-23 | `pyyaml` 을 §10.1 에 추가 | 문체 프리셋 파서 |
 | D-24 | 백엔드를 `OpenAICompatBackend` 하나로 통합 (vLLM · llama.cpp 공용) | 둘이 같은 `/v1/chat/completions` 프로토콜을 쓴다 (§5) |
+| D-25 | requirements 파일을 5개 → 2개로 통합 (`requirements.txt` · `requirements-dev.txt`) | 갈리는 결정은 "폐쇄망에 반입하는가" 하나뿐이다. 나머지 구분은 주석으로 충분하다 (2026-09-01) |
 
 ---
 
@@ -148,8 +149,8 @@ pip 의 `--platform` 은 wheel 의 플랫폼 태그만 바꾸고, 환경 마커
 > 조건부 의존성이 누락된다. 컨테이너를 쓰면 다음과 같다.
 > ```bash
 > docker run --rm -v "$PWD:/w" -w /w python:3.11-slim \
->   pip download -r requirements-core.txt -r requirements-nlp.txt \
->     --only-binary=:all: -d bundle/wheels/
+>   pip download -r requirements.txt \
+>     --only-binary=:all: --find-links bundle/wheels/ -d bundle/wheels/
 > ```
 
 ---
@@ -254,7 +255,7 @@ Phase 3 에서 골든셋으로 `noterm` / `proper` 를 비교할 때 이 사례�
 | `pyproject.toml` | pytest / ruff / mypy 설정. 의존성은 여기 적지 않았다 |
 | `requirements.lock.txt` | §10.6 산출물 |
 | `.env.example` / `.env` | 설정 예시와 로컬 설정. `.env` 는 git 제외 |
-| `.github/workflows/ci.yml` | §9.5 를 CI 에 강제 (R-02) |
+| ~~`.github/workflows/ci.yml`~~ | §9.5 자동 강제용이었으나 2026-08-23 제거. 수동 실행으로 전환 |
 | `tools/README.md` | 각 도구의 단계와 선행 조건 |
 | `docs/phase0-notes.md` | 이 문서 |
 
@@ -271,7 +272,7 @@ Phase 0 은 끝났지만 다음이 확정되어야 다음 단계가 열린다.
 | O-03 | 확보 용어집 규모 | Phase 1 일정 |
 | O-04 | 동시 접속자 수 | 워커 수, 세마포어 상한 (R-12) |
 | O-05 | 반입 절차·주기 | Phase 5, 핫리로드 필수 여부 |
-| O-06 | 폐쇄망 OS / CUDA | `requirements-serve.txt` 잠금 |
+| O-06 | 폐쇄망 OS / CUDA | 서빙 스택(torch/vLLM) 버전 잠금 |
 | O-07 | 인증 방식 | `/admin/reload` 활성화 (현재 기본 비활성) |
 | O-08 | TTS/STT 범위 | — |
 | O-09 | 모델 원산지 규정 | Qwen3 후보 유지 여부 |
@@ -281,5 +282,6 @@ Phase 0 은 끝났지만 다음이 확정되어야 다음 단계가 열린다.
 - **프론트 연동 확인 (Phase 0 작업 6)** — `llm-frontend/src/pages/TranslatePage.tsx`
   가 기대하는 요청/응답 형태를 대조하지 못했다. 백엔드는 계획서 §4.4 를 그대로
   구현했다. 실제 화면에 붙여 확인하는 절차가 남아 있다.
-- **계획서 반영** — D-20 ~ D-24 를 §1 결정 로그에, `pyyaml` 을 §10.1 에,
-  Kiwi 문장 분할을 §6.2 에, 번들 생성 호스트 조건을 §10.6 에 옮길 것.
+- **계획서 반영** — D-20 ~ D-25 를 §1 결정 로그에, Kiwi 문장 분할을 §6.2 에
+  옮길 것. §10 은 D-25 로 이미 다시 썼다 (2개 파일 구성 · 번들 생성 명령 ·
+  생성 호스트 조건 포함).

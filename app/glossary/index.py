@@ -48,8 +48,7 @@ class GlossaryIndex:
                 logger.error("%s 오토마톤 생성 실패: %s", direction, e)
         else:
             logger.warning(
-                "pyahocorasick 이 없어 용어 매칭 없이 동작한다. "
-                "requirements-nlp.txt 를 설치할 것"
+                "pyahocorasick 이 없어 용어 매칭 없이 동작한다. " "requirements.txt 를 설치할 것"
             )
         return cls(
             direction=direction,
@@ -249,7 +248,7 @@ class IndexRegistry:
         if not kiwi_available():
             logger.warning(
                 "kiwipiepy 가 없어 규칙 기반 문장 분할기로 동작한다. "
-                "requirements-nlp.txt 를 설치할 것"
+                "requirements.txt 를 설치할 것"
             )
             return None
         try:

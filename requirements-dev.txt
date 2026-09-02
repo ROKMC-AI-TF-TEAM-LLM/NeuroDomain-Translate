@@ -1,10 +1,41 @@
-# -*- coding: utf-8 -*-
-# 개발 환경 전용 — 계획서 §10.4
-# 폐쇄망에 반입하지 않는다.
+﻿# 개발 환경 — 계획서 §10
+#
+# **폐쇄망에 반입하지 않는다.** 반입 대상은 requirements.txt 뿐이다.
+#
+#   pip install -r requirements-dev.txt
+#
+# 런타임까지 함께 깔린다. 개발자는 이 파일 하나만 설치하면 된다.
 
+-r requirements.txt
+
+# ── 테스트 · 품질 ─────────────────────────────────────────────
+#
+# CI 를 두지 않았으므로(2026-08-23) 커밋 전에 사람이 실행한다.
+#   pytest tests/ -q
+#   ruff check . && ruff format --check .
 pytest==8.3.4
 pytest-asyncio==0.25.0
-pytest-cov==6.0.0
 ruff==0.8.6
 mypy==1.14.1
-ipython==8.31.0
+
+# ── 용어집 도구 (Phase 1) ─────────────────────────────────────
+#
+# tools/glossary_template.py, tools/glossary_import.py 가 쓴다.
+# O-02 가 엑셀로 확정되어 필요해졌다.
+openpyxl==3.1.5
+
+# ── 아직 넣지 않은 것 ─────────────────────────────────────────
+#
+# 아래는 계획서 §10.5 가 예정한 Phase 1 · 3 도구 의존성이다. 해당 스크립트가
+# 전부 미구현(NotImplementedError)이라 지금 넣으면 쓰지도 않는 수 GB 를 받는다
+# — sentence-transformers 와 unbabel-comet 은 torch 를 끌고 온다.
+#
+# 그 스크립트를 실제로 구현할 때 이 주석을 풀 것.
+#
+#   pandas==2.2.3                  # 코퍼스 처리
+#   sentence-transformers==3.3.1   # 문장 정렬 (tools/corpus_align.py)
+#   sacrebleu==2.4.3               # chrF (app/eval/metrics.py)
+#   unbabel-comet==2.2.4           # COMET (선택, §12.1)
+#
+# ⚠ sentence-transformers 는 런타임에 모델을 내려받는다. 개발망 전용이므로
+#   허용되지만, `app/` 아래 코드에서는 절대 import 하지 말 것 (§9.3).

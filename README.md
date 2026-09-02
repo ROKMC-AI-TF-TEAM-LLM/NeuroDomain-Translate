@@ -13,7 +13,7 @@
 
 | 단계 | 내용 | 상태 |
 |---|---|---|
-| Phase 0 | 골격, mock 백엔드, SQLite, 오프라인 CI | ✅ |
+| Phase 0 | 골격, mock 백엔드, SQLite, 오프라인 검증 | ✅ |
 | Phase 1 | 용어집 구축 | ⛔ O-01·O-02·O-03 확정 필요 |
 | Phase 2 | 매칭 엔진 (Aho-Corasick + Kiwi) | ✅ |
 | Phase 3 | 모델 평가 (L40S) | ⛔ O-06 확정 필요 |
@@ -59,7 +59,7 @@ Python 3.11 (반입 번들과 같은 버전이어야 한다). Windows / Linux �
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-pip install -r requirements-core.txt -r requirements-nlp.txt -r requirements-dev.txt
+pip install -r requirements-dev.txt
 copy .env.example .env
 ```
 
@@ -69,15 +69,16 @@ copy .env.example .env
 python -m venv .venv
 source .venv/bin/activate
 
-pip install -r requirements-core.txt -r requirements-nlp.txt -r requirements-dev.txt
+pip install -r requirements-dev.txt
 cp .env.example .env
 ```
 
-`requirements-nlp.txt` 설치에는 시간이 걸린다. `kiwipiepy-model` 이 79MB 이고
-PyPI 에 wheel 이 없어 sdist 를 빌드한다 (D-21). 이것 없이 코어만 깔아도
-서비스는 돌지만 문장 분할이 규칙 기반으로 떨어진다.
+설치에는 시간이 걸린다. `kiwipiepy-model` 이 79MB 이고 PyPI 에 wheel 이 없어
+sdist 를 빌드한다 (D-21). 이것과 `pyahocorasick` 없이도 서비스는 돌지만
+문장 분할이 규칙 기반으로 떨어지고 용어 주입이 빠진다 — `/health` 의
+`segmenter` · `matcher` 필드로 확인할 수 있다.
 
-`requirements-serve.txt`(torch / vLLM)는 Phase 3 에서 L40S 서버에만 깐다.
+서빙 스택(torch / vLLM)은 requirements 에 없다. Phase 3 에서 L40S 서버에만 깐다.
 개발 환경에서는 llama.cpp 를 쓴다 — vLLM 은 KV 캐시를 미리 크게 잡아 6GB 카드에
 맞지 않는다 (§8.2).
 
@@ -96,7 +97,7 @@ PyPI 에 wheel 이 없어 sdist 를 빌드한다 (D-21). 이것 없이 코어만
 | `NDT_VLLM_BASE_URL` | `http://127.0.0.1:8000/v1` | 모델 서버. **폐쇄망 내부 주소만** |
 | `NDT_VLLM_SERVED_NAME` | (자동) | 비우면 `/v1/models` 첫 항목 |
 | `NDT_PROMPT_PRESET` | `full` | `full` \| `compact` (§7.9) |
-| `NDT_DEFAULT_STYLE` | `press_release` | 아래 문체 참조 |
+| `NDT_DEFAULT_STYLE` | `plain_report` | 아래 문체 참조 |
 | `NDT_USE_KIWI` | `true` | false 면 규칙 기반 문장 분할 |
 | `NDT_MAX_INPUT_CHARS` | `5000` | 입력 상한 (D-05) |
 | `NDT_ADMIN_ENABLED` | `false` | `/admin/reload`. **O-07 확정 전까지 켜지 말 것** |
@@ -310,7 +311,10 @@ Windows 에서도 그대로 돈다. 모델 서버나 GPU 가 없어도 전부 �
 | `test_backend_live.py` | 실제 모델 서버 연동 | 서버 없으면 skip |
 
 `test_offline.py` 는 외부 연결·이름 해석을 차단한 상태에서 파이프라인을 돌리고,
-`app/` 에 §9.3 금지 패턴이 있는지 정적으로도 검사한다. CI 에서 매 커밋 실행된다.
+`app/` 에 §9.3 금지 패턴이 있는지 정적으로도 검사한다.
+
+> **CI 는 두지 않았다.** 이 검사는 자동으로 돌지 않으므로 **반입 번들을 만들기 전에
+> 사람이 실행해야 한다** (§9.5, R-02). 통과하지 못하면 번들을 만들지 말 것.
 
 실제 모델로 확인하려면 서버를 띄운 뒤:
 
@@ -344,7 +348,7 @@ tools/          오프라인 배치 도구 — 개발망 전용, 반입하지 �
 
 1. **런타임에 네트워크를 쓰는 코드를 넣지 말 것** (§9.3). 모델은 로컬 절대경로로
    지정한다. `from_pretrained("org/model")`, `snapshot_download`, `nltk.download`,
-   `requests.get` 등은 CI 가 잡는다.
+   `requests.get` 등은 `tests/test_offline.py` 가 잡는다 — 커밋 전에 돌릴 것.
 2. **계획서 §10 에 없는 라이브러리를 추가하지 말 것.** 필요하면 사람에게 승인을
    받고 §10 에 버전과 함께 적는다.
 3. **§2 미확정 항목(O-01~O-09)을 추정으로 결정하지 말 것.** 값이 필요하면 멈추고
